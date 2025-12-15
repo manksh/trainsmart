@@ -1,0 +1,54 @@
+NOTES:,,,,,
+Reverse Items need to have their numbers the opposite (ie. 1 = 7),,,,,
+"Each Item is categorized, some questions have two categories",,,,,
+Thinking Feeling Acting scores are separate,,,,,
+,,,,,
+Item Number,Item,Primary Category,Secondary Category,Reverse,Thinking/ Feeling/ Acting
+1,It's hard for me to notice my thoughts.,Mindfulness,,Reverse,Thinking
+2,I'm good at noticing my feelings and emotions.,Mindfulness,,,Feeling
+3,I notice myself doing things without paying attention to them.,Mindfulness,,Reverse,Acting
+4,I can notice my thoughts without letting them affect how I feel.,Mindfulness,,,Thinking
+5,It's hard for me notice my feelings without letting them control what I do.,Mindfulness,,Reverse,Feeling
+6,I don't get very frustrated or upset when I make mistakes.,Mindfulness,,,Acting
+7,It's common that thoughts get stuck in my head.,Mindfulness,,,Thinking
+8,"When I have strong feelings, they only last a short period of time.",Mindfulness,,,Feeling
+9,I can boost my confidence when I need to.,Confidence,,,
+10,I'm aware of the situations that challenge my confidence.,Confidence,Self-Awareness,,
+11,I'm confident in my skills and abilities as an athlete.,Confidence,,,
+12,I'm confident I will achieve my goals.,Confidence,,,
+13,I lose confidence after a disappointing performance.,Confidence,,Reverse,
+14,I'm driven to learn and master new things.,Motivation,,,
+15,I care a lot about what others think of me.,Motivation,,Reverse,
+16,I do hard things even when I don't feel like it.,Motivation,,,Acting
+17,I know what situations challenge my motivation.,Motivation,,,
+18,I'm aware of my strengths.,Self-Awareness,,,
+19,I'm aware of my weaknesses.,Self-Awareness,,,
+20,"I'm aware of how I typically think in different situations (i.e., my thinking patterns).",Self-Awareness,,,Thinking
+21,"I'm aware of how I typically feel in different situations (i.e., my patterns of emotions)",Self-Awareness,,,Feeling
+22,"I'm aware of how I typical act in different situations (i.e., my patterns of behaviour).",Self-Awareness,,,Acting
+23,I have a clear idea of the values that shape who I am.,Self-Awareness,,,
+24,I know what I need to do to feel healthy.,Self-Awareness,Wellness,,Acting
+25,I often reflect on my thoughts.,Self-Awareness,,Reverse,Thinking
+26,It's hard for me to stay focused under pressure.,Attentional Focus,,,
+27,I can direct my attention to the things I need to focus on.,Attentional Focus,,Reverse,
+28,It's hard for me to regain focus when I get distracted.,Attentional Focus,,,
+29,I know where my attention needs to be when I'm performing.,Attentional Focus,,,
+30,I can keep my attention on a task for the time it needs without getting too distracted.,Attentional Focus,,,
+31,I can energize myself when I need a boost.,Arousal Control,,,
+32,I can calm myself down when I need to.,Arousal Control,,,
+33,I know what state I need to be in to perform at my best.,Arousal Control,,,
+34,My performance is negatively affected by stress.,Arousal Control,,Reverse,
+35,I can bounce back quickly when things go wrong.,Resilience,,,
+36,I find ways to get better after I fail.,Resilience,,,
+37,I struggle to maintain a positive mindset when things get tough.,Resilience,,Reverse,Thinking
+38,I adapt well to change.,Resilience,,,
+39,I understand how thoughts work and how they impact us.,Knowledge,,,Thinking
+40,"I understand what emotions are, how they work, and how they impact us.",Knowledge,,,Feeling
+41,"I understand what habits are, how they work, and how they impact us.",Knowledge,,,Acting
+42,I understand what's within and outside of people's control.,Knowledge,,,
+43,I understand what goes into living a healthy lifestyle.,Knowledge,Wellness,,
+44,I have a lot of motivation and desire to bring my best to practice.,Deliberate Practice,Motivation,,
+45,I set specific goals for practice.,Deliberate Practice,,,
+46,I consistently bring high levels of effort to practice.,Deliberate Practice,,,
+47,I get a lot of good feedback in practice.,Deliberate Practice,,,
+48,I generally feel good and healthy.,Wellness,,,
