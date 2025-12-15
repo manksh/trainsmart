@@ -37,6 +37,7 @@ class User(Base):
     memberships = relationship("Membership", back_populates="user", lazy="selectin")
     assessment_responses = relationship("AssessmentResponse", back_populates="user", lazy="selectin")
     invites_sent = relationship("Invite", back_populates="created_by_user", foreign_keys="[Invite.created_by]", lazy="selectin")
+    check_ins = relationship("CheckIn", back_populates="user", lazy="selectin")
 
     @property
     def full_name(self) -> str:
