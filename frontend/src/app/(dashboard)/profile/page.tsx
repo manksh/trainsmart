@@ -30,7 +30,11 @@ interface AssessmentStatus {
 interface AssessmentResult {
   id: string
   pillar_scores: Record<string, number>
-  meta_scores: Record<string, number> | null
+  meta_scores: {
+    thinking: number
+    feeling: number
+    action: number
+  } | null
   strengths: string[]
   growth_areas: string[]
   completed_at: string
@@ -152,9 +156,62 @@ function RadarChart({ scores }: { scores: Record<string, number> }) {
   )
 }
 
+// Meta Scores (Thinking, Feeling, Acting)
+function MetaScoresCard({ scores }: { scores: { thinking: number; feeling: number; action: number } }) {
+  const maxScore = 7
+
+  const getScoreColor = (score: number) => {
+    const percentage = (score / maxScore) * 100
+    if (percentage >= 70) return { bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-600', bar: 'bg-green-500' }
+    if (percentage >= 50) return { bg: 'bg-yellow-50', border: 'border-yellow-200', text: 'text-yellow-600', bar: 'bg-yellow-500' }
+    return { bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-600', bar: 'bg-orange-500' }
+  }
+
+  const categories = [
+    { key: 'thinking', label: 'Thinking', description: 'Mental clarity, focus & self-talk', icon: '🧠', score: scores.thinking },
+    { key: 'feeling', label: 'Feeling', description: 'Emotional awareness & regulation', icon: '💚', score: scores.feeling },
+    { key: 'action', label: 'Acting', description: 'Behavioral habits & resilience', icon: '⚡', score: scores.action },
+  ]
+
+  return (
+    <div className="grid gap-4 md:grid-cols-3 mb-6">
+      {categories.map((cat) => {
+        const colors = getScoreColor(cat.score)
+        const percentage = (cat.score / maxScore) * 100
+        return (
+          <div key={cat.key} className={`${colors.bg} ${colors.border} border rounded-xl p-5`}>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-2xl">{cat.icon}</span>
+              <div>
+                <h4 className="font-semibold text-gray-900">{cat.label}</h4>
+                <p className="text-xs text-gray-500">{cat.description}</p>
+              </div>
+            </div>
+            <div className="flex items-end gap-2 mt-3">
+              <span className={`text-3xl font-bold ${colors.text}`}>{cat.score.toFixed(1)}</span>
+              <span className="text-sm text-gray-400 mb-1">/ {maxScore}</span>
+            </div>
+            <div className="h-2 bg-white/50 rounded-full overflow-hidden mt-2">
+              <div
+                className={`h-full ${colors.bar} transition-all duration-500 rounded-full`}
+                style={{ width: `${percentage}%` }}
+              />
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 function AssessmentResults({ results }: { results: AssessmentResult }) {
   return (
     <div className="space-y-6">
+      {/* Meta Scores (Thinking, Feeling, Acting) */}
+      {results.meta_scores && (
+        <MetaScoresCard scores={results.meta_scores} />
+      )}
+
       {/* Strengths and Growth Areas */}
       <div className="grid gap-4 md:grid-cols-2">
         {/* Strengths */}

@@ -4,6 +4,17 @@ from app.models.membership import Membership, MembershipRole, MembershipStatus
 from app.models.invite import Invite
 from app.models.assessment import Assessment, AssessmentResponse
 from app.models.checkin import CheckIn, CheckInType, Emotion, EMOTION_CONFIG, BODY_AREAS
+from app.models.journal import (
+    JournalEntry,
+    JournalType,
+    AffirmationFocusArea,
+    AFFIRMATIONS_BY_FOCUS,
+    AFFIRMATION_TIMING_OPTIONS,
+    DAILY_WIN_FACTORS,
+    EMOTION_OPTIONS,
+    OPEN_ENDED_TAGS,
+    OPEN_ENDED_PROMPTS,
+)
 
 __all__ = [
     "User",
@@ -19,4 +30,13 @@ __all__ = [
     "Emotion",
     "EMOTION_CONFIG",
     "BODY_AREAS",
+    "JournalEntry",
+    "JournalType",
+    "AffirmationFocusArea",
+    "AFFIRMATIONS_BY_FOCUS",
+    "AFFIRMATION_TIMING_OPTIONS",
+    "DAILY_WIN_FACTORS",
+    "EMOTION_OPTIONS",
+    "OPEN_ENDED_TAGS",
+    "OPEN_ENDED_PROMPTS",
 ]

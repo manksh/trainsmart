@@ -429,6 +429,62 @@ async def get_weekly_stats(
     }
 
 
+@router.get("/me/activity/week")
+async def get_weekly_activity(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Get daily activity status for the current week (Monday-Sunday).
+
+    Returns which days of the current week had any activity (check-ins of any type).
+    """
+    # Get the current date and calculate week boundaries (Monday to Sunday)
+    today = date.today()
+    # Monday is 0, Sunday is 6
+    days_since_monday = today.weekday()
+    monday = today - timedelta(days=days_since_monday)
+    sunday = monday + timedelta(days=6)
+
+    start_of_week = datetime.combine(monday, datetime.min.time())
+    end_of_week = datetime.combine(sunday, datetime.max.time())
+
+    # Get all check-ins for the current week
+    result = await db.execute(
+        select(CheckIn)
+        .where(CheckIn.user_id == current_user.id)
+        .where(CheckIn.created_at >= start_of_week)
+        .where(CheckIn.created_at <= end_of_week)
+    )
+    check_ins = result.scalars().all()
+
+    # Track which dates have activity
+    active_dates = set()
+    for c in check_ins:
+        active_dates.add(c.created_at.date())
+
+    # Build the daily activity array (Mon=0 to Sun=6)
+    daily_activity = []
+    for i in range(7):
+        day_date = monday + timedelta(days=i)
+        daily_activity.append({
+            "date": day_date.isoformat(),
+            "day_name": day_date.strftime("%a"),  # Mon, Tue, etc.
+            "has_activity": day_date in active_dates,
+            "is_today": day_date == today,
+            "is_past": day_date < today,
+        })
+
+    active_days = len(active_dates)
+
+    return {
+        "week_start": monday.isoformat(),
+        "week_end": sunday.isoformat(),
+        "daily_activity": daily_activity,
+        "active_days": active_days,
+        "total_days": 7,
+    }
+
+
 # === Confidence Check-In Endpoints ===
 
 def get_confidence_level_category(level: int) -> str:

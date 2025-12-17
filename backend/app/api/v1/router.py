@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.v1 import auth, users, organizations, invites, assessments, checkins
+from app.api.v1 import auth, users, organizations, invites, assessments, checkins, journals
 
 api_router = APIRouter()
 
@@ -11,6 +11,7 @@ api_router.include_router(organizations.router, prefix="/organizations", tags=["
 api_router.include_router(invites.router, prefix="/invites", tags=["invites"])
 api_router.include_router(assessments.router, prefix="/assessments", tags=["assessments"])
 api_router.include_router(checkins.router, prefix="/checkins", tags=["checkins"])
+api_router.include_router(journals.router, prefix="/journals", tags=["journals"])
 
 
 @api_router.get("/")

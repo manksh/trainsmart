@@ -373,6 +373,175 @@ class TestWeeklyStats:
         assert "happy" in data["emotions_breakdown"]
 
 
+class TestWeeklyActivity:
+    """Tests for weekly activity endpoint."""
+
+    @pytest.mark.asyncio
+    async def test_get_weekly_activity_empty(
+        self,
+        client: AsyncClient,
+        athlete_token: str,
+    ):
+        """Should return weekly activity structure even with no check-ins."""
+        response = await client.get(
+            "/api/v1/checkins/me/activity/week",
+            headers=auth_headers(athlete_token),
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+
+        # Check structure
+        assert "week_start" in data
+        assert "week_end" in data
+        assert "daily_activity" in data
+        assert "active_days" in data
+        assert "total_days" in data
+
+        # Check daily activity structure
+        assert len(data["daily_activity"]) == 7
+        day = data["daily_activity"][0]
+        assert "date" in day
+        assert "day_name" in day
+        assert "has_activity" in day
+        assert "is_today" in day
+        assert "is_past" in day
+
+        # Check totals
+        assert data["total_days"] == 7
+        assert data["active_days"] == 0  # No check-ins
+
+    @pytest.mark.asyncio
+    async def test_get_weekly_activity_with_checkins(
+        self,
+        client: AsyncClient,
+        athlete_token: str,
+        organization: Organization,
+    ):
+        """Should show activity for days with check-ins."""
+        # Create a mood check-in (today)
+        await client.post(
+            "/api/v1/checkins/",
+            headers=auth_headers(athlete_token),
+            json={
+                "organization_id": str(organization.id),
+                "emotion": "happy",
+                "intensity": 4,
+                "body_areas": ["head"],
+            },
+        )
+
+        response = await client.get(
+            "/api/v1/checkins/me/activity/week",
+            headers=auth_headers(athlete_token),
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+
+        # Should have at least 1 active day (today)
+        assert data["active_days"] >= 1
+
+        # Find today in the daily_activity array
+        today_activity = next(
+            (d for d in data["daily_activity"] if d["is_today"]),
+            None
+        )
+        assert today_activity is not None
+        assert today_activity["has_activity"] is True
+
+    @pytest.mark.asyncio
+    async def test_get_weekly_activity_multiple_checkin_types(
+        self,
+        client: AsyncClient,
+        athlete_token: str,
+        organization: Organization,
+    ):
+        """Should count any check-in type as activity."""
+        # Create different types of check-ins (all today)
+        await client.post(
+            "/api/v1/checkins/",
+            headers=auth_headers(athlete_token),
+            json={
+                "organization_id": str(organization.id),
+                "emotion": "confident",
+                "intensity": 5,
+                "body_areas": ["chest"],
+            },
+        )
+
+        await client.post(
+            "/api/v1/checkins/breathing",
+            headers=auth_headers(athlete_token),
+            json={
+                "organization_id": str(organization.id),
+                "breathing_exercise_type": "relax",
+                "cycles_completed": 4,
+            },
+        )
+
+        await client.post(
+            "/api/v1/checkins/confidence",
+            headers=auth_headers(athlete_token),
+            json={
+                "organization_id": str(organization.id),
+                "confidence_level": 6,
+            },
+        )
+
+        await client.post(
+            "/api/v1/checkins/energy",
+            headers=auth_headers(athlete_token),
+            json={
+                "organization_id": str(organization.id),
+                "physical_energy": 5,
+                "mental_energy": 5,
+            },
+        )
+
+        response = await client.get(
+            "/api/v1/checkins/me/activity/week",
+            headers=auth_headers(athlete_token),
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+
+        # Should still count as 1 active day (all on same day)
+        # But has_activity should be True for today
+        today_activity = next(
+            (d for d in data["daily_activity"] if d["is_today"]),
+            None
+        )
+        assert today_activity is not None
+        assert today_activity["has_activity"] is True
+
+    @pytest.mark.asyncio
+    async def test_get_weekly_activity_day_names(
+        self,
+        client: AsyncClient,
+        athlete_token: str,
+    ):
+        """Should return correct day names (Mon, Tue, etc.)."""
+        response = await client.get(
+            "/api/v1/checkins/me/activity/week",
+            headers=auth_headers(athlete_token),
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+
+        day_names = [d["day_name"] for d in data["daily_activity"]]
+        expected_names = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+        assert day_names == expected_names
+
+    @pytest.mark.asyncio
+    async def test_weekly_activity_requires_auth(self, client: AsyncClient):
+        """Should require authentication."""
+        response = await client.get("/api/v1/checkins/me/activity/week")
+        assert response.status_code == 401
+
+
 class TestConfidenceConfig:
     """Tests for confidence configuration endpoint."""
 
@@ -1008,4 +1177,514 @@ class TestEnergyTodayStatus:
     async def test_energy_today_requires_auth(self, client: AsyncClient):
         """Should require authentication."""
         response = await client.get("/api/v1/checkins/energy/me/today")
+        assert response.status_code == 401
+
+
+class TestBreathingExercisesConfig:
+    """Tests for breathing exercises configuration endpoint."""
+
+    @pytest.mark.asyncio
+    async def test_get_breathing_exercises_config(
+        self, client: AsyncClient, athlete_token: str
+    ):
+        """Should return all breathing exercises with configurations."""
+        response = await client.get(
+            "/api/v1/checkins/breathing/exercises",
+            headers=auth_headers(athlete_token),
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+
+        # Check structure
+        assert "exercises" in data
+
+        # Check we have all 4 breathing exercises
+        assert len(data["exercises"]) == 4
+
+        # Check exercise structure
+        exercise = data["exercises"][0]
+        assert "key" in exercise
+        assert "display_name" in exercise
+        assert "technique" in exercise
+        assert "description" in exercise
+        assert "triggers" in exercise
+        assert "timing" in exercise
+        assert "cycles" in exercise
+        assert "instructions" in exercise
+        assert "category" in exercise
+
+        # Check timing structure
+        timing = exercise["timing"]
+        assert "inhale" in timing
+        assert "hold_in" in timing
+        assert "exhale" in timing
+        assert "hold_out" in timing
+
+        # Check triggers and instructions are lists
+        assert isinstance(exercise["triggers"], list)
+        assert len(exercise["triggers"]) > 0
+        assert isinstance(exercise["instructions"], list)
+        assert len(exercise["instructions"]) > 0
+
+    @pytest.mark.asyncio
+    async def test_breathing_exercises_has_all_types(
+        self, client: AsyncClient, athlete_token: str
+    ):
+        """Should include all breathing exercise types."""
+        response = await client.get(
+            "/api/v1/checkins/breathing/exercises",
+            headers=auth_headers(athlete_token),
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+
+        exercise_keys = [e["key"] for e in data["exercises"]]
+        assert "energize" in exercise_keys
+        assert "relax" in exercise_keys
+        assert "relax_fast" in exercise_keys
+        assert "focus" in exercise_keys
+
+    @pytest.mark.asyncio
+    async def test_breathing_exercises_has_categories(
+        self, client: AsyncClient, athlete_token: str
+    ):
+        """Should have correct categories for each exercise."""
+        response = await client.get(
+            "/api/v1/checkins/breathing/exercises",
+            headers=auth_headers(athlete_token),
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+
+        categories = {e["key"]: e["category"] for e in data["exercises"]}
+        assert categories["energize"] == "activation"
+        assert categories["relax"] == "calming"
+        assert categories["relax_fast"] == "calming"
+        assert categories["focus"] == "focus"
+
+    @pytest.mark.asyncio
+    async def test_breathing_exercises_requires_auth(self, client: AsyncClient):
+        """Should require authentication."""
+        response = await client.get("/api/v1/checkins/breathing/exercises")
+        assert response.status_code == 401
+
+
+class TestCreateBreathingCheckIn:
+    """Tests for creating breathing check-ins."""
+
+    @pytest.mark.asyncio
+    async def test_create_breathing_checkin_success(
+        self,
+        client: AsyncClient,
+        athlete_token: str,
+        organization: Organization,
+    ):
+        """Should create a breathing check-in successfully."""
+        response = await client.post(
+            "/api/v1/checkins/breathing",
+            headers=auth_headers(athlete_token),
+            json={
+                "organization_id": str(organization.id),
+                "breathing_exercise_type": "relax",
+                "cycles_completed": 4,
+                "duration_seconds": 120,
+                "trigger_selected": "Feeling anxious or stressed",
+                "effectiveness_rating": 4,
+                "notes": "Felt much calmer after",
+            },
+        )
+
+        assert response.status_code == 201
+        data = response.json()
+        assert data["breathing_exercise_type"] == "relax"
+        assert data["cycles_completed"] == 4
+        assert data["duration_seconds"] == 120
+        assert data["trigger_selected"] == "Feeling anxious or stressed"
+        assert data["effectiveness_rating"] == 4
+        assert data["notes"] == "Felt much calmer after"
+        assert data["check_in_type"] == "breathing"
+
+    @pytest.mark.asyncio
+    async def test_create_breathing_checkin_energize(
+        self,
+        client: AsyncClient,
+        athlete_token: str,
+        organization: Organization,
+    ):
+        """Should create an energize breathing check-in."""
+        response = await client.post(
+            "/api/v1/checkins/breathing",
+            headers=auth_headers(athlete_token),
+            json={
+                "organization_id": str(organization.id),
+                "breathing_exercise_type": "energize",
+                "cycles_completed": 12,
+                "duration_seconds": 60,
+                "trigger_selected": "Feeling sluggish before training",
+                "effectiveness_rating": 5,
+            },
+        )
+
+        assert response.status_code == 201
+        data = response.json()
+        assert data["breathing_exercise_type"] == "energize"
+        assert data["cycles_completed"] == 12
+        assert data["effectiveness_rating"] == 5
+
+    @pytest.mark.asyncio
+    async def test_create_breathing_checkin_focus(
+        self,
+        client: AsyncClient,
+        athlete_token: str,
+        organization: Organization,
+    ):
+        """Should create a focus breathing check-in."""
+        response = await client.post(
+            "/api/v1/checkins/breathing",
+            headers=auth_headers(athlete_token),
+            json={
+                "organization_id": str(organization.id),
+                "breathing_exercise_type": "focus",
+                "cycles_completed": 10,
+                "duration_seconds": 180,
+            },
+        )
+
+        assert response.status_code == 201
+        data = response.json()
+        assert data["breathing_exercise_type"] == "focus"
+        assert data["cycles_completed"] == 10
+
+    @pytest.mark.asyncio
+    async def test_create_breathing_checkin_quick_calm(
+        self,
+        client: AsyncClient,
+        athlete_token: str,
+        organization: Organization,
+    ):
+        """Should create a quick calm (psychological sigh) breathing check-in."""
+        response = await client.post(
+            "/api/v1/checkins/breathing",
+            headers=auth_headers(athlete_token),
+            json={
+                "organization_id": str(organization.id),
+                "breathing_exercise_type": "relax_fast",
+                "cycles_completed": 3,
+                "duration_seconds": 30,
+                "trigger_selected": "Pre-performance nerves",
+            },
+        )
+
+        assert response.status_code == 201
+        data = response.json()
+        assert data["breathing_exercise_type"] == "relax_fast"
+        assert data["cycles_completed"] == 3
+
+    @pytest.mark.asyncio
+    async def test_create_breathing_checkin_minimal(
+        self,
+        client: AsyncClient,
+        athlete_token: str,
+        organization: Organization,
+    ):
+        """Should create a breathing check-in with minimal required fields."""
+        response = await client.post(
+            "/api/v1/checkins/breathing",
+            headers=auth_headers(athlete_token),
+            json={
+                "organization_id": str(organization.id),
+                "breathing_exercise_type": "relax",
+                "cycles_completed": 4,
+            },
+        )
+
+        assert response.status_code == 201
+        data = response.json()
+        assert data["breathing_exercise_type"] == "relax"
+        assert data["cycles_completed"] == 4
+        assert data["check_in_type"] == "breathing"
+        # Optional fields should be None
+        assert data["duration_seconds"] is None
+        assert data["trigger_selected"] is None
+        assert data["effectiveness_rating"] is None
+        assert data["notes"] is None
+
+    @pytest.mark.asyncio
+    async def test_create_breathing_checkin_invalid_exercise_type(
+        self,
+        client: AsyncClient,
+        athlete_token: str,
+        organization: Organization,
+    ):
+        """Should reject invalid breathing exercise type."""
+        response = await client.post(
+            "/api/v1/checkins/breathing",
+            headers=auth_headers(athlete_token),
+            json={
+                "organization_id": str(organization.id),
+                "breathing_exercise_type": "invalid_type",
+                "cycles_completed": 4,
+            },
+        )
+
+        assert response.status_code == 400
+        assert "Invalid breathing exercise type" in response.json()["detail"]
+
+    @pytest.mark.asyncio
+    async def test_create_breathing_checkin_invalid_cycles_zero(
+        self,
+        client: AsyncClient,
+        athlete_token: str,
+        organization: Organization,
+    ):
+        """Should reject zero cycles completed."""
+        response = await client.post(
+            "/api/v1/checkins/breathing",
+            headers=auth_headers(athlete_token),
+            json={
+                "organization_id": str(organization.id),
+                "breathing_exercise_type": "relax",
+                "cycles_completed": 0,
+            },
+        )
+
+        # 422 from Pydantic validation (ge=1 constraint)
+        assert response.status_code == 422
+
+    @pytest.mark.asyncio
+    async def test_create_breathing_checkin_invalid_cycles_negative(
+        self,
+        client: AsyncClient,
+        athlete_token: str,
+        organization: Organization,
+    ):
+        """Should reject negative cycles completed."""
+        response = await client.post(
+            "/api/v1/checkins/breathing",
+            headers=auth_headers(athlete_token),
+            json={
+                "organization_id": str(organization.id),
+                "breathing_exercise_type": "relax",
+                "cycles_completed": -5,
+            },
+        )
+
+        # 422 from Pydantic validation (ge=1 constraint)
+        assert response.status_code == 422
+
+    @pytest.mark.asyncio
+    async def test_create_breathing_checkin_invalid_effectiveness_too_low(
+        self,
+        client: AsyncClient,
+        athlete_token: str,
+        organization: Organization,
+    ):
+        """Should reject effectiveness rating below 1."""
+        response = await client.post(
+            "/api/v1/checkins/breathing",
+            headers=auth_headers(athlete_token),
+            json={
+                "organization_id": str(organization.id),
+                "breathing_exercise_type": "relax",
+                "cycles_completed": 4,
+                "effectiveness_rating": 0,
+            },
+        )
+
+        # 422 from Pydantic validation (ge=1 constraint)
+        assert response.status_code == 422
+
+    @pytest.mark.asyncio
+    async def test_create_breathing_checkin_invalid_effectiveness_too_high(
+        self,
+        client: AsyncClient,
+        athlete_token: str,
+        organization: Organization,
+    ):
+        """Should reject effectiveness rating above 5."""
+        response = await client.post(
+            "/api/v1/checkins/breathing",
+            headers=auth_headers(athlete_token),
+            json={
+                "organization_id": str(organization.id),
+                "breathing_exercise_type": "relax",
+                "cycles_completed": 4,
+                "effectiveness_rating": 10,
+            },
+        )
+
+        # 422 from Pydantic validation (le=5 constraint)
+        assert response.status_code == 422
+
+    @pytest.mark.asyncio
+    async def test_create_breathing_checkin_invalid_duration_negative(
+        self,
+        client: AsyncClient,
+        athlete_token: str,
+        organization: Organization,
+    ):
+        """Should reject negative duration."""
+        response = await client.post(
+            "/api/v1/checkins/breathing",
+            headers=auth_headers(athlete_token),
+            json={
+                "organization_id": str(organization.id),
+                "breathing_exercise_type": "relax",
+                "cycles_completed": 4,
+                "duration_seconds": -60,
+            },
+        )
+
+        # 422 from Pydantic validation (ge=0 constraint)
+        assert response.status_code == 422
+
+    @pytest.mark.asyncio
+    async def test_create_breathing_checkin_requires_membership(
+        self,
+        client: AsyncClient,
+        athlete_token: str,
+        db_session: AsyncSession,
+        superadmin_user: User,
+    ):
+        """Should reject check-in for organization user is not a member of."""
+        import uuid
+
+        other_org = Organization(
+            id=uuid.uuid4(),
+            name="Other Org for Breathing",
+            sport="yoga",
+            created_by=superadmin_user.id,
+        )
+        db_session.add(other_org)
+        await db_session.commit()
+
+        response = await client.post(
+            "/api/v1/checkins/breathing",
+            headers=auth_headers(athlete_token),
+            json={
+                "organization_id": str(other_org.id),
+                "breathing_exercise_type": "relax",
+                "cycles_completed": 4,
+            },
+        )
+
+        assert response.status_code == 403
+
+    @pytest.mark.asyncio
+    async def test_create_breathing_checkin_requires_auth(
+        self, client: AsyncClient, organization: Organization
+    ):
+        """Should require authentication."""
+        response = await client.post(
+            "/api/v1/checkins/breathing",
+            json={
+                "organization_id": str(organization.id),
+                "breathing_exercise_type": "relax",
+                "cycles_completed": 4,
+            },
+        )
+        assert response.status_code == 401
+
+
+class TestBreathingTodayStatus:
+    """Tests for breathing check-in today status endpoint."""
+
+    @pytest.mark.asyncio
+    async def test_get_breathing_today_no_checkin(
+        self,
+        client: AsyncClient,
+        athlete_token: str,
+    ):
+        """Should indicate no breathing check-in today when none exists."""
+        response = await client.get(
+            "/api/v1/checkins/breathing/me/today",
+            headers=auth_headers(athlete_token),
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["has_checked_in_today"] is False
+        assert data["count_today"] == 0
+        assert data["check_ins"] == []
+
+    @pytest.mark.asyncio
+    async def test_get_breathing_today_with_single_checkin(
+        self,
+        client: AsyncClient,
+        athlete_token: str,
+        organization: Organization,
+    ):
+        """Should return today's breathing check-in."""
+        # Create a breathing check-in
+        await client.post(
+            "/api/v1/checkins/breathing",
+            headers=auth_headers(athlete_token),
+            json={
+                "organization_id": str(organization.id),
+                "breathing_exercise_type": "focus",
+                "cycles_completed": 10,
+                "effectiveness_rating": 4,
+            },
+        )
+
+        response = await client.get(
+            "/api/v1/checkins/breathing/me/today",
+            headers=auth_headers(athlete_token),
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["has_checked_in_today"] is True
+        assert data["count_today"] >= 1
+        assert len(data["check_ins"]) >= 1
+        assert data["check_ins"][0]["breathing_exercise_type"] == "focus"
+        assert data["check_ins"][0]["cycles_completed"] == 10
+
+    @pytest.mark.asyncio
+    async def test_get_breathing_today_with_multiple_checkins(
+        self,
+        client: AsyncClient,
+        athlete_token: str,
+        organization: Organization,
+    ):
+        """Should return all of today's breathing check-ins."""
+        # Create multiple breathing check-ins
+        await client.post(
+            "/api/v1/checkins/breathing",
+            headers=auth_headers(athlete_token),
+            json={
+                "organization_id": str(organization.id),
+                "breathing_exercise_type": "energize",
+                "cycles_completed": 12,
+            },
+        )
+
+        await client.post(
+            "/api/v1/checkins/breathing",
+            headers=auth_headers(athlete_token),
+            json={
+                "organization_id": str(organization.id),
+                "breathing_exercise_type": "relax",
+                "cycles_completed": 4,
+            },
+        )
+
+        response = await client.get(
+            "/api/v1/checkins/breathing/me/today",
+            headers=auth_headers(athlete_token),
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["has_checked_in_today"] is True
+        assert data["count_today"] >= 2
+        assert len(data["check_ins"]) >= 2
+
+    @pytest.mark.asyncio
+    async def test_breathing_today_requires_auth(self, client: AsyncClient):
+        """Should require authentication."""
+        response = await client.get("/api/v1/checkins/breathing/me/today")
         assert response.status_code == 401

@@ -40,8 +40,6 @@ const TOOLS: TrainItem[] = [
     color: 'text-purple-600',
     bgColor: 'bg-purple-100',
     route: '/tools/journaling',
-    isPlaceholder: true,
-    badge: 'Coming soon',
   },
 ]
 

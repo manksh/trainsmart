@@ -27,6 +27,15 @@ interface AssessmentStatus {
   completed_at: string | null
 }
 
+interface AssessmentResult {
+  id: string
+  meta_scores: {
+    thinking: number
+    feeling: number
+    action: number
+  } | null
+}
+
 // === Check-in Types ===
 interface CheckInOption {
   id: string
@@ -118,7 +127,6 @@ const TOOL_OPTIONS: TrainItem[] = [
     color: 'text-purple-600',
     bgColor: 'bg-purple-100',
     route: '/tools/journaling',
-    isPlaceholder: true,
   },
 ]
 
@@ -363,71 +371,167 @@ function TrainDropdown({ isExpanded, onToggle, onSelect }: TrainDropdownProps) {
   )
 }
 
-// === Weekly Activity Tracker Placeholder ===
+// === Weekly Activity Types ===
+interface DailyActivity {
+  date: string
+  day_name: string
+  has_activity: boolean
+  is_today: boolean
+  is_past: boolean
+}
+
+interface WeeklyActivityData {
+  week_start: string
+  week_end: string
+  daily_activity: DailyActivity[]
+  active_days: number
+  total_days: number
+}
+
+// === Weekly Activity Tracker ===
 function WeeklyActivityTracker() {
-  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+  const [activityData, setActivityData] = useState<WeeklyActivityData | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
-  // TODO: Replace with real data from API
-  const activityData = [
-    { hasActivity: true },  // Mon
-    { hasActivity: true },  // Tue
-    { hasActivity: false }, // Wed
-    { hasActivity: true },  // Thu
-    { hasActivity: false }, // Fri
-    { hasActivity: false }, // Sat
-    { hasActivity: false }, // Sun
-  ]
+  useEffect(() => {
+    const loadActivity = async () => {
+      try {
+        const data = await apiGet<WeeklyActivityData>('/checkins/me/activity/week')
+        setActivityData(data)
+      } catch (err) {
+        console.error('Failed to load weekly activity:', err)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    loadActivity()
+  }, [])
 
-  const today = new Date().getDay()
-  const todayIndex = today === 0 ? 6 : today - 1 // Convert to Mon=0 index
+  if (isLoading) {
+    return (
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+        <div className="animate-pulse">
+          <div className="flex items-center justify-between mb-4">
+            <div className="h-5 w-24 bg-gray-200 rounded"></div>
+            <div className="h-4 w-20 bg-gray-200 rounded"></div>
+          </div>
+          <div className="flex justify-between gap-1 sm:gap-2">
+            {[...Array(7)].map((_, i) => (
+              <div key={i} className="flex flex-col items-center gap-2">
+                <div className="h-3 w-6 bg-gray-200 rounded"></div>
+                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-200 rounded-full"></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const days = activityData?.daily_activity || []
+  const activeDays = activityData?.active_days || 0
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-semibold text-gray-900">Your Week</h3>
         <span className="text-sm text-gray-500">
-          {activityData.filter(d => d.hasActivity).length}/7 days active
+          {activeDays}/7 days active
         </span>
       </div>
       <div className="flex justify-between gap-1 sm:gap-2">
-        {days.map((day, index) => {
-          const isToday = index === todayIndex
-          const hasActivity = activityData[index]?.hasActivity
-          const isPast = index < todayIndex
+        {days.map((day) => (
+          <div key={day.date} className="flex flex-col items-center gap-2">
+            <span className={`text-xs font-medium ${day.is_today ? 'text-blue-600' : 'text-gray-500'}`}>
+              {day.day_name}
+            </span>
+            <div
+              className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center ${
+                day.has_activity
+                  ? 'bg-green-100 text-green-600'
+                  : day.is_today
+                    ? 'bg-blue-100 text-blue-600 ring-2 ring-blue-600 ring-offset-2'
+                    : day.is_past
+                      ? 'bg-gray-100 text-gray-400'
+                      : 'bg-gray-50 text-gray-300'
+              }`}
+            >
+              {day.has_activity ? (
+                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              ) : day.is_today ? (
+                <span className="text-xs font-bold">!</span>
+              ) : (
+                <div className="w-2 h-2 rounded-full bg-current" />
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+      <p className="text-xs text-gray-400 text-center mt-4">
+        Complete a check-in, use a tool, or do a module to mark a day active
+      </p>
+    </div>
+  )
+}
 
+// === Mental Performance Scores Card ===
+function MentalPerformanceScores({ scores, onViewProfile }: {
+  scores: { thinking: number; feeling: number; action: number }
+  onViewProfile: () => void
+}) {
+  const maxScore = 7
+
+  const getScoreColor = (score: number) => {
+    const percentage = (score / maxScore) * 100
+    if (percentage >= 70) return { bg: 'bg-green-100', text: 'text-green-600', bar: 'bg-green-500' }
+    if (percentage >= 50) return { bg: 'bg-yellow-100', text: 'text-yellow-600', bar: 'bg-yellow-500' }
+    return { bg: 'bg-orange-100', text: 'text-orange-600', bar: 'bg-orange-500' }
+  }
+
+  const categories = [
+    { key: 'thinking', label: 'Thinking', icon: '🧠', score: scores.thinking },
+    { key: 'feeling', label: 'Feeling', icon: '💚', score: scores.feeling },
+    { key: 'action', label: 'Acting', icon: '⚡', score: scores.action },
+  ]
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="font-semibold text-gray-900">Mental Performance</h3>
+        <button
+          onClick={onViewProfile}
+          className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+        >
+          View Full Profile
+        </button>
+      </div>
+      <div className="space-y-3">
+        {categories.map((cat) => {
+          const colors = getScoreColor(cat.score)
+          const percentage = (cat.score / maxScore) * 100
           return (
-            <div key={day} className="flex flex-col items-center gap-2">
-              <span className={`text-xs font-medium ${isToday ? 'text-blue-600' : 'text-gray-500'}`}>
-                {day}
-              </span>
-              <div
-                className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center ${
-                  hasActivity
-                    ? 'bg-green-100 text-green-600'
-                    : isToday
-                      ? 'bg-blue-100 text-blue-600 ring-2 ring-blue-600 ring-offset-2'
-                      : isPast
-                        ? 'bg-gray-100 text-gray-400'
-                        : 'bg-gray-50 text-gray-300'
-                }`}
-              >
-                {hasActivity ? (
-                  <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                ) : isToday ? (
-                  <span className="text-xs font-bold">!</span>
-                ) : (
-                  <div className="w-2 h-2 rounded-full bg-current" />
-                )}
+            <div key={cat.key} className="flex items-center gap-3">
+              <span className="text-lg w-6">{cat.icon}</span>
+              <div className="flex-1">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-sm font-medium text-gray-700">{cat.label}</span>
+                  <span className={`text-sm font-semibold ${colors.text}`}>
+                    {cat.score.toFixed(1)}
+                  </span>
+                </div>
+                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full ${colors.bar} transition-all duration-500 rounded-full`}
+                    style={{ width: `${percentage}%` }}
+                  />
+                </div>
               </div>
             </div>
           )
         })}
       </div>
-      <p className="text-xs text-gray-400 text-center mt-4">
-        Complete a check-in, use a tool, or do a module to mark a day active
-      </p>
     </div>
   )
 }
@@ -468,6 +572,7 @@ export default function HomePage() {
   const [fullUser, setFullUser] = useState<FullUser | null>(null)
   const [isLoadingData, setIsLoadingData] = useState(true)
   const [assessmentStatus, setAssessmentStatus] = useState<AssessmentStatus | null>(null)
+  const [assessmentResult, setAssessmentResult] = useState<AssessmentResult | null>(null)
 
   // Dropdown states
   const [checkInsExpanded, setCheckInsExpanded] = useState(false)
@@ -485,6 +590,16 @@ export default function HomePage() {
 
         setFullUser(userData)
         setAssessmentStatus(status)
+
+        // If assessment is completed, fetch the results for meta scores
+        if (status.has_completed) {
+          try {
+            const results = await apiGet<AssessmentResult>('/assessments/results/me/latest')
+            setAssessmentResult(results)
+          } catch (err) {
+            console.error('Failed to load assessment results:', err)
+          }
+        }
       } catch (err) {
         console.error('Failed to load user data:', err)
       } finally {
@@ -526,6 +641,14 @@ export default function HomePage() {
       <div className="space-y-4">
         {/* Weekly Activity Tracker */}
         <WeeklyActivityTracker />
+
+        {/* Mental Performance Scores (if assessment completed) */}
+        {hasCompletedAssessment && assessmentResult?.meta_scores && (
+          <MentalPerformanceScores
+            scores={assessmentResult.meta_scores}
+            onViewProfile={() => router.push('/profile')}
+          />
+        )}
 
         {/* Assessment Prompt (if not completed) */}
         {!hasCompletedAssessment && (
