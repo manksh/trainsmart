@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import { apiGet } from '@/lib/api'
-import { Button } from '@/components/ui/button'
 
 interface UserMembership {
   organization_id: string
@@ -28,474 +27,457 @@ interface AssessmentStatus {
   completed_at: string | null
 }
 
-interface AssessmentResult {
+// === Check-in Types ===
+interface CheckInOption {
   id: string
-  pillar_scores: Record<string, number>
-  meta_scores: Record<string, number> | null
-  strengths: string[]
-  growth_areas: string[]
-  completed_at: string
+  name: string
+  description: string
+  icon: React.ReactNode
+  color: string
+  bgColor: string
+  route: string
 }
 
-const PILLAR_DISPLAY_NAMES: Record<string, string> = {
-  mindfulness: 'Mindfulness',
-  confidence: 'Confidence',
-  motivation: 'Motivation',
-  attentional_focus: 'Attentional Focus',
-  arousal_control: 'Arousal Control',
-  resilience: 'Resilience',
+const CHECK_IN_OPTIONS: CheckInOption[] = [
+  {
+    id: 'mood',
+    name: 'Mood',
+    description: 'How are you feeling right now?',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+      </svg>
+    ),
+    color: 'text-pink-600',
+    bgColor: 'bg-pink-100',
+    route: '/checkin/mood',
+  },
+  {
+    id: 'energy',
+    name: 'Energy',
+    description: 'Track physical & mental energy',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+      </svg>
+    ),
+    color: 'text-green-600',
+    bgColor: 'bg-green-100',
+    route: '/checkin/energy',
+  },
+  {
+    id: 'confidence',
+    name: 'Confidence',
+    description: 'Rate your current confidence',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+      </svg>
+    ),
+    color: 'text-amber-600',
+    bgColor: 'bg-amber-100',
+    route: '/checkin/confidence',
+  },
+]
+
+// === Train Item Types ===
+interface TrainItem {
+  id: string
+  name: string
+  description: string
+  icon: React.ReactNode
+  color: string
+  bgColor: string
+  route: string
+  isPlaceholder?: boolean
 }
 
-const CORE_PILLARS = ['mindfulness', 'confidence', 'motivation', 'attentional_focus', 'arousal_control', 'resilience']
+const TOOL_OPTIONS: TrainItem[] = [
+  {
+    id: 'breathing',
+    name: 'Breathing',
+    description: 'Energize, relax, or focus',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+      </svg>
+    ),
+    color: 'text-cyan-600',
+    bgColor: 'bg-cyan-100',
+    route: '/tools/breathing',
+  },
+  {
+    id: 'journaling',
+    name: 'Journaling',
+    description: 'Reflect and process thoughts',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+      </svg>
+    ),
+    color: 'text-purple-600',
+    bgColor: 'bg-purple-100',
+    route: '/tools/journaling',
+    isPlaceholder: true,
+  },
+]
 
-type TabType = 'dashboard' | 'checkins'
+const MODULE_OPTIONS: TrainItem[] = [
+  {
+    id: 'confidence-building',
+    name: 'Building Confidence',
+    description: 'Build unshakeable self-belief',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+      </svg>
+    ),
+    color: 'text-amber-600',
+    bgColor: 'bg-amber-100',
+    route: '/modules/confidence',
+    isPlaceholder: true,
+  },
+  {
+    id: 'focus-attention',
+    name: 'Focus & Attention',
+    description: 'Sharpen your concentration',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+      </svg>
+    ),
+    color: 'text-blue-600',
+    bgColor: 'bg-blue-100',
+    route: '/modules/focus',
+    isPlaceholder: true,
+  },
+  {
+    id: 'stress-management',
+    name: 'Stress Management',
+    description: 'Perform under pressure',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+      </svg>
+    ),
+    color: 'text-rose-600',
+    bgColor: 'bg-rose-100',
+    route: '/modules/stress',
+    isPlaceholder: true,
+  },
+]
 
-function ScoreBar({ score, maxScore = 7 }: { score: number; maxScore?: number }) {
-  const percentage = (score / maxScore) * 100
-  let colorClass = 'bg-yellow-500'
-  if (percentage >= 70) colorClass = 'bg-green-500'
-  else if (percentage < 50) colorClass = 'bg-orange-500'
+// === Dropdown Component ===
+interface DropdownProps {
+  title: string
+  icon: React.ReactNode
+  color: string
+  bgColor: string
+  options: (CheckInOption | TrainItem)[]
+  isExpanded: boolean
+  onToggle: () => void
+  onSelect: (route: string) => void
+}
 
+function ExpandableSection({ title, icon, color, bgColor, options, isExpanded, onToggle, onSelect }: DropdownProps) {
   return (
-    <div className="flex items-center gap-3">
-      <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-        <div
-          className={`h-full ${colorClass} transition-all duration-500`}
-          style={{ width: `${percentage}%` }}
-        />
-      </div>
-      <span className="text-sm font-medium text-gray-600 w-10 text-right">
-        {score.toFixed(1)}
-      </span>
-    </div>
-  )
-}
-
-function RadarChart({ scores }: { scores: Record<string, number> }) {
-  const pillars = CORE_PILLARS
-  const centerX = 120
-  const centerY = 120
-  const maxRadius = 80
-
-  const backgroundPoints = pillars.map((_, i) => {
-    const angle = (i * 360) / pillars.length - 90
-    const rad = (angle * Math.PI) / 180
-    return {
-      x: centerX + maxRadius * Math.cos(rad),
-      y: centerY + maxRadius * Math.sin(rad),
-    }
-  })
-
-  const scorePoints = pillars.map((pillar, i) => {
-    const score = scores[pillar] || 0
-    const radius = (score / 7) * maxRadius
-    const angle = (i * 360) / pillars.length - 90
-    const rad = (angle * Math.PI) / 180
-    return {
-      x: centerX + radius * Math.cos(rad),
-      y: centerY + radius * Math.sin(rad),
-    }
-  })
-
-  return (
-    <svg viewBox="0 0 240 240" className="w-full max-w-[240px] mx-auto">
-      {[0.25, 0.5, 0.75, 1].map((scale) => (
-        <polygon
-          key={scale}
-          points={backgroundPoints.map((p) => {
-            const x = centerX + (p.x - centerX) * scale
-            const y = centerY + (p.y - centerY) * scale
-            return `${x},${y}`
-          }).join(' ')}
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <button
+        onClick={onToggle}
+        className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
+      >
+        <div className="flex items-center gap-3">
+          <div className={`${bgColor} ${color} p-2 rounded-lg`}>
+            {icon}
+          </div>
+          <span className="font-semibold text-gray-900">{title}</span>
+        </div>
+        <svg
+          className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
           fill="none"
-          stroke="#e5e7eb"
-          strokeWidth="1"
-        />
-      ))}
-      {backgroundPoints.map((point, i) => (
-        <line
-          key={i}
-          x1={centerX}
-          y1={centerY}
-          x2={point.x}
-          y2={point.y}
-          stroke="#e5e7eb"
-          strokeWidth="1"
-        />
-      ))}
-      <polygon
-        points={scorePoints.map((p) => `${p.x},${p.y}`).join(' ')}
-        fill="rgba(59, 130, 246, 0.3)"
-        stroke="#3b82f6"
-        strokeWidth="2"
-      />
-      {scorePoints.map((point, i) => (
-        <circle key={i} cx={point.x} cy={point.y} r="3" fill="#3b82f6" />
-      ))}
-      {pillars.map((pillar, i) => {
-        const angle = (i * 360) / pillars.length - 90
-        const rad = (angle * Math.PI) / 180
-        const labelRadius = maxRadius + 24
-        const x = centerX + labelRadius * Math.cos(rad)
-        const y = centerY + labelRadius * Math.sin(rad)
-        return (
-          <text
-            key={pillar}
-            x={x}
-            y={y}
-            textAnchor="middle"
-            dominantBaseline="middle"
-            className="text-[10px] fill-gray-500"
-          >
-            {PILLAR_DISPLAY_NAMES[pillar]?.split(' ')[0]}
-          </text>
-        )
-      })}
-    </svg>
-  )
-}
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
 
-function DashboardTab({
-  results,
-  hasCompletedAssessment,
-  onStartAssessment
-}: {
-  results: AssessmentResult | null
-  hasCompletedAssessment: boolean
-  onStartAssessment: () => void
-}) {
-  if (!hasCompletedAssessment || !results) {
-    return (
-      <div className="bg-white rounded-lg shadow p-8 text-center">
-        <div className="max-w-md mx-auto">
-          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-            </svg>
-          </div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">
-            Complete Your Mental Performance Assessment
-          </h2>
-          <p className="text-gray-600 mb-6">
-            Take a 10-minute assessment to discover your mental performance strengths
-            and areas for growth.
-          </p>
-          <Button onClick={onStartAssessment} className="px-8">
-            Start Assessment
-          </Button>
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <div className="space-y-6">
-      {/* Strengths and Growth Areas */}
-      <div className="grid gap-4 md:grid-cols-2">
-        {/* Strengths */}
-        <div className="bg-white rounded-lg shadow p-5">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-              <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <h3 className="font-semibold text-gray-900">Your Strengths</h3>
-          </div>
-          <ul className="space-y-2">
-            {results.strengths.map((strength) => (
-              <li key={strength} className="flex items-center justify-between">
-                <span className="text-gray-700">{PILLAR_DISPLAY_NAMES[strength]}</span>
-                <span className="text-sm text-green-600 font-medium">
-                  {(results.pillar_scores[strength] || 0).toFixed(1)}/7
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Growth Areas */}
-        <div className="bg-white rounded-lg shadow p-5">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
-              <svg className="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-              </svg>
-            </div>
-            <h3 className="font-semibold text-gray-900">Growth Areas</h3>
-          </div>
-          <ul className="space-y-2">
-            {results.growth_areas.map((area) => (
-              <li key={area} className="flex items-center justify-between">
-                <span className="text-gray-700">{PILLAR_DISPLAY_NAMES[area]}</span>
-                <span className="text-sm text-orange-600 font-medium">
-                  {(results.pillar_scores[area] || 0).toFixed(1)}/7
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
-
-      {/* Radar Chart and All Scores */}
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* Radar Chart */}
-        <div className="bg-white rounded-lg shadow p-5">
-          <h3 className="font-semibold text-gray-900 mb-4 text-center">Mental Skills Profile</h3>
-          <RadarChart scores={results.pillar_scores} />
-        </div>
-
-        {/* All Scores */}
-        <div className="bg-white rounded-lg shadow p-5">
-          <h3 className="font-semibold text-gray-900 mb-4">All Scores</h3>
-          <div className="space-y-3">
-            {CORE_PILLARS.map((pillar) => {
-              const score = results.pillar_scores[pillar] || 0
-              const isStrength = results.strengths.includes(pillar)
-              const isGrowth = results.growth_areas.includes(pillar)
-              return (
-                <div key={pillar}>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm text-gray-700">
-                      {PILLAR_DISPLAY_NAMES[pillar]}
+      {isExpanded && (
+        <div className="border-t border-gray-100 p-2">
+          {options.map((option) => (
+            <button
+              key={option.id}
+              onClick={() => 'isPlaceholder' in option && option.isPlaceholder ? null : onSelect(option.route)}
+              disabled={'isPlaceholder' in option && option.isPlaceholder}
+              className={`w-full flex items-center gap-3 p-3 rounded-lg text-left transition-colors ${
+                'isPlaceholder' in option && option.isPlaceholder
+                  ? 'opacity-50 cursor-not-allowed'
+                  : 'hover:bg-gray-50'
+              }`}
+            >
+              <div className={`${option.bgColor} ${option.color} p-2 rounded-lg`}>
+                {option.icon}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="font-medium text-gray-900">{option.name}</p>
+                  {'isPlaceholder' in option && option.isPlaceholder && (
+                    <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
+                      Coming soon
                     </span>
-                    {isStrength && (
-                      <span className="text-xs px-1.5 py-0.5 bg-green-100 text-green-700 rounded">
-                        Strength
-                      </span>
-                    )}
-                    {isGrowth && (
-                      <span className="text-xs px-1.5 py-0.5 bg-orange-100 text-orange-700 rounded">
-                        Growth
-                      </span>
-                    )}
-                  </div>
-                  <ScoreBar score={score} />
+                  )}
                 </div>
-              )
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* Assessment Info */}
-      <div className="text-center text-sm text-gray-500">
-        Assessment completed {new Date(results.completed_at).toLocaleDateString()}
-      </div>
-    </div>
-  )
-}
-
-interface TodayCheckInStatus {
-  has_checked_in_today: boolean
-  check_in: CheckInRecord | null
-}
-
-interface CheckInRecord {
-  id: string
-  emotion: string
-  intensity: number
-  body_areas: string[]
-  selected_action: string | null
-  created_at: string
-}
-
-interface CheckInHistory {
-  check_ins: CheckInRecord[]
-  total: number
-}
-
-const EMOTION_EMOJIS: Record<string, string> = {
-  happy: '😊',
-  excited: '🤩',
-  calm: '😌',
-  confident: '💪',
-  grateful: '🙏',
-  nervous: '😰',
-  stressed: '😫',
-  angry: '😠',
-  sad: '😢',
-  tired: '😴',
-  bored: '😐',
-  indifferent: '😶',
-  fearful: '😨',
-  disgusted: '🤢',
-}
-
-const EMOTION_NAMES: Record<string, string> = {
-  happy: 'Happy',
-  excited: 'Excited',
-  calm: 'Calm',
-  confident: 'Confident',
-  grateful: 'Grateful',
-  nervous: 'Nervous',
-  stressed: 'Stressed',
-  angry: 'Angry',
-  sad: 'Sad',
-  tired: 'Tired',
-  bored: 'Bored',
-  indifferent: 'Indifferent',
-  fearful: 'Fearful',
-  disgusted: 'Disgusted',
-}
-
-function CheckInsTab() {
-  const router = useRouter()
-  const [todayStatus, setTodayStatus] = useState<TodayCheckInStatus | null>(null)
-  const [history, setHistory] = useState<CheckInHistory | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-
-  useEffect(() => {
-    const loadCheckIns = async () => {
-      try {
-        const [status, historyData] = await Promise.all([
-          apiGet<TodayCheckInStatus>('/checkins/me/today'),
-          apiGet<CheckInHistory>('/checkins/me?page_size=7'),
-        ])
-        setTodayStatus(status)
-        setHistory(historyData)
-      } catch (err) {
-        console.error('Failed to load check-ins:', err)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-    loadCheckIns()
-  }, [])
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      </div>
-    )
-  }
-
-  return (
-    <div className="space-y-6">
-      {/* Today's Check-in Card */}
-      <div className="bg-white rounded-lg shadow p-6">
-        {todayStatus?.has_checked_in_today && todayStatus.check_in ? (
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <p className="text-sm text-gray-500 truncate">{option.description}</p>
+              </div>
+              {!('isPlaceholder' in option && option.isPlaceholder) && (
+                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900">Today's Check-in Complete</h3>
-                <p className="text-sm text-gray-500">
-                  {new Date(todayStatus.check_in.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </p>
-              </div>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-4">
-              <div className="flex items-center gap-3">
-                <span className="text-3xl">{EMOTION_EMOJIS[todayStatus.check_in.emotion]}</span>
-                <div>
-                  <p className="font-medium text-gray-900">
-                    {EMOTION_NAMES[todayStatus.check_in.emotion]}
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    Intensity: {todayStatus.check_in.intensity}/5
-                  </p>
-                </div>
-              </div>
-              {todayStatus.check_in.selected_action && (
-                <div className="mt-3 pt-3 border-t">
-                  <p className="text-sm text-gray-500">Your commitment:</p>
-                  <p className="text-sm font-medium text-blue-600">{todayStatus.check_in.selected_action}</p>
-                </div>
               )}
-            </div>
-          </div>
-        ) : (
-          <div className="text-center py-4">
-            <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-              </svg>
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              How are you feeling today?
-            </h3>
-            <p className="text-gray-600 mb-4 text-sm">
-              Take a moment to check in with yourself and build self-awareness.
-            </p>
-            <Button onClick={() => router.push('/checkin')}>
-              Start Check-in
-            </Button>
-          </div>
-        )}
-      </div>
-
-      {/* Recent Check-ins */}
-      {history && history.check_ins.length > 0 && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="font-semibold text-gray-900 mb-4">Recent Check-ins</h3>
-          <div className="space-y-3">
-            {history.check_ins.map((checkIn) => (
-              <div
-                key={checkIn.id}
-                className="flex items-center justify-between py-2 border-b last:border-0"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl">{EMOTION_EMOJIS[checkIn.emotion]}</span>
-                  <div>
-                    <p className="font-medium text-gray-900 text-sm">
-                      {EMOTION_NAMES[checkIn.emotion]}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {new Date(checkIn.created_at).toLocaleDateString(undefined, {
-                        weekday: 'short',
-                        month: 'short',
-                        day: 'numeric',
-                      })}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1">
-                  {[1, 2, 3, 4, 5].map((i) => (
-                    <div
-                      key={i}
-                      className={`w-2 h-2 rounded-full ${
-                        i <= checkIn.intensity ? 'bg-blue-600' : 'bg-gray-200'
-                      }`}
-                    />
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-          {history.total > 7 && (
-            <div className="mt-4 text-center">
-              <button className="text-sm text-blue-600 hover:text-blue-700 font-medium">
-                View all check-ins
-              </button>
-            </div>
-          )}
+            </button>
+          ))}
         </div>
       )}
     </div>
   )
 }
 
-export default function AthleteDashboard() {
+// === Train Dropdown with Sub-sections ===
+interface TrainDropdownProps {
+  isExpanded: boolean
+  onToggle: () => void
+  onSelect: (route: string) => void
+}
+
+function TrainDropdown({ isExpanded, onToggle, onSelect }: TrainDropdownProps) {
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <button
+        onClick={onToggle}
+        className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
+      >
+        <div className="flex items-center gap-3">
+          <div className="bg-indigo-100 text-indigo-600 p-2 rounded-lg">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+          </div>
+          <span className="font-semibold text-gray-900">Train</span>
+        </div>
+        <svg
+          className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {isExpanded && (
+        <div className="border-t border-gray-100">
+          {/* Tools Section */}
+          <div className="p-3 pb-2">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2 px-1">Tools</p>
+            <div className="space-y-1">
+              {TOOL_OPTIONS.map((option) => (
+                <button
+                  key={option.id}
+                  onClick={() => option.isPlaceholder ? null : onSelect(option.route)}
+                  disabled={option.isPlaceholder}
+                  className={`w-full flex items-center gap-3 p-2.5 rounded-lg text-left transition-colors ${
+                    option.isPlaceholder
+                      ? 'opacity-50 cursor-not-allowed'
+                      : 'hover:bg-gray-50'
+                  }`}
+                >
+                  <div className={`${option.bgColor} ${option.color} p-1.5 rounded-lg`}>
+                    {option.icon}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium text-gray-900 text-sm">{option.name}</p>
+                      {option.isPlaceholder && (
+                        <span className="text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full">
+                          Soon
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500 truncate">{option.description}</p>
+                  </div>
+                  {!option.isPlaceholder && (
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div className="border-t border-gray-100 mx-3" />
+
+          {/* Modules Section */}
+          <div className="p-3 pt-2">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2 px-1">Modules</p>
+            <div className="space-y-1">
+              {MODULE_OPTIONS.map((option) => (
+                <button
+                  key={option.id}
+                  onClick={() => option.isPlaceholder ? null : onSelect(option.route)}
+                  disabled={option.isPlaceholder}
+                  className={`w-full flex items-center gap-3 p-2.5 rounded-lg text-left transition-colors ${
+                    option.isPlaceholder
+                      ? 'opacity-50 cursor-not-allowed'
+                      : 'hover:bg-gray-50'
+                  }`}
+                >
+                  <div className={`${option.bgColor} ${option.color} p-1.5 rounded-lg`}>
+                    {option.icon}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium text-gray-900 text-sm">{option.name}</p>
+                      {option.isPlaceholder && (
+                        <span className="text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full">
+                          Soon
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500 truncate">{option.description}</p>
+                  </div>
+                  {!option.isPlaceholder && (
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// === Weekly Activity Tracker Placeholder ===
+function WeeklyActivityTracker() {
+  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+
+  // TODO: Replace with real data from API
+  const activityData = [
+    { hasActivity: true },  // Mon
+    { hasActivity: true },  // Tue
+    { hasActivity: false }, // Wed
+    { hasActivity: true },  // Thu
+    { hasActivity: false }, // Fri
+    { hasActivity: false }, // Sat
+    { hasActivity: false }, // Sun
+  ]
+
+  const today = new Date().getDay()
+  const todayIndex = today === 0 ? 6 : today - 1 // Convert to Mon=0 index
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="font-semibold text-gray-900">Your Week</h3>
+        <span className="text-sm text-gray-500">
+          {activityData.filter(d => d.hasActivity).length}/7 days active
+        </span>
+      </div>
+      <div className="flex justify-between gap-1 sm:gap-2">
+        {days.map((day, index) => {
+          const isToday = index === todayIndex
+          const hasActivity = activityData[index]?.hasActivity
+          const isPast = index < todayIndex
+
+          return (
+            <div key={day} className="flex flex-col items-center gap-2">
+              <span className={`text-xs font-medium ${isToday ? 'text-blue-600' : 'text-gray-500'}`}>
+                {day}
+              </span>
+              <div
+                className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center ${
+                  hasActivity
+                    ? 'bg-green-100 text-green-600'
+                    : isToday
+                      ? 'bg-blue-100 text-blue-600 ring-2 ring-blue-600 ring-offset-2'
+                      : isPast
+                        ? 'bg-gray-100 text-gray-400'
+                        : 'bg-gray-50 text-gray-300'
+                }`}
+              >
+                {hasActivity ? (
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : isToday ? (
+                  <span className="text-xs font-bold">!</span>
+                ) : (
+                  <div className="w-2 h-2 rounded-full bg-current" />
+                )}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+      <p className="text-xs text-gray-400 text-center mt-4">
+        Complete a check-in, use a tool, or do a module to mark a day active
+      </p>
+    </div>
+  )
+}
+
+// === Assessment Prompt ===
+function AssessmentPrompt({ onStart }: { onStart: () => void }) {
+  return (
+    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-5">
+      <div className="flex items-start gap-4">
+        <div className="bg-blue-100 p-3 rounded-xl">
+          <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+          </svg>
+        </div>
+        <div className="flex-1">
+          <h3 className="font-semibold text-gray-900 mb-1">
+            Complete Your Mental Performance Assessment
+          </h3>
+          <p className="text-sm text-gray-600 mb-3">
+            Take a 10-minute assessment to discover your strengths and growth areas.
+          </p>
+          <button
+            onClick={onStart}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+          >
+            Start Assessment
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// === Main Page Component ===
+export default function HomePage() {
   const router = useRouter()
-  const { user, isLoading, logout } = useAuth()
+  const { user, isLoading } = useAuth()
   const [fullUser, setFullUser] = useState<FullUser | null>(null)
   const [isLoadingData, setIsLoadingData] = useState(true)
   const [assessmentStatus, setAssessmentStatus] = useState<AssessmentStatus | null>(null)
-  const [results, setResults] = useState<AssessmentResult | null>(null)
-  const [activeTab, setActiveTab] = useState<TabType>('dashboard')
+
+  // Dropdown states
+  const [checkInsExpanded, setCheckInsExpanded] = useState(false)
+  const [trainExpanded, setTrainExpanded] = useState(false)
 
   useEffect(() => {
     const loadUserData = async () => {
       if (!user) return
 
       try {
-        // Load user data and assessment status in parallel
         const [userData, status] = await Promise.all([
           apiGet<FullUser>('/users/me/full'),
           apiGet<AssessmentStatus>('/assessments/me/status'),
@@ -503,16 +485,6 @@ export default function AthleteDashboard() {
 
         setFullUser(userData)
         setAssessmentStatus(status)
-
-        // If assessment is completed, load results
-        if (status.has_completed) {
-          try {
-            const resultsData = await apiGet<AssessmentResult>('/assessments/results/me/latest')
-            setResults(resultsData)
-          } catch (err) {
-            console.error('Failed to load results:', err)
-          }
-        }
       } catch (err) {
         console.error('Failed to load user data:', err)
       } finally {
@@ -525,9 +497,13 @@ export default function AthleteDashboard() {
     }
   }, [user, isLoading])
 
+  const handleNavigate = (route: string) => {
+    router.push(route)
+  }
+
   if (isLoading || isLoadingData) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex items-center justify-center py-20">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     )
@@ -536,64 +512,60 @@ export default function AthleteDashboard() {
   const hasCompletedAssessment = assessmentStatus?.has_completed || false
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow">
-        <div className="max-w-4xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              Welcome, {fullUser?.first_name}!
-            </h1>
-            <p className="text-sm text-gray-500">
-              {fullUser?.memberships?.[0]?.organization_name || 'Athlete Dashboard'}
-            </p>
-          </div>
-          <Button variant="outline" onClick={logout}>
-            Sign out
-          </Button>
-        </div>
-      </header>
-
-      {/* Tab Navigation */}
-      <div className="bg-white border-b">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <nav className="flex gap-8">
-            <button
-              onClick={() => setActiveTab('dashboard')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                activeTab === 'dashboard'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Dashboard
-            </button>
-            <button
-              onClick={() => setActiveTab('checkins')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                activeTab === 'checkins'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Check-ins
-            </button>
-          </nav>
-        </div>
+    <main className="max-w-lg mx-auto px-4 py-6 sm:py-8">
+      {/* Greeting */}
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">
+          Hey, {fullUser?.first_name}!
+        </h1>
+        <p className="text-gray-500">
+          Ready to train your mind today?
+        </p>
       </div>
 
-      {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
-        {activeTab === 'dashboard' ? (
-          <DashboardTab
-            results={results}
-            hasCompletedAssessment={hasCompletedAssessment}
-            onStartAssessment={() => router.push('/assessment')}
-          />
-        ) : (
-          <CheckInsTab />
+      <div className="space-y-4">
+        {/* Weekly Activity Tracker */}
+        <WeeklyActivityTracker />
+
+        {/* Assessment Prompt (if not completed) */}
+        {!hasCompletedAssessment && (
+          <AssessmentPrompt onStart={() => router.push('/assessment')} />
         )}
-      </main>
-    </div>
+
+        {/* Check-ins Dropdown */}
+        <ExpandableSection
+          title="Check-ins"
+          icon={
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          }
+          color="text-blue-600"
+          bgColor="bg-blue-100"
+          options={CHECK_IN_OPTIONS}
+          isExpanded={checkInsExpanded}
+          onToggle={() => {
+            setCheckInsExpanded(!checkInsExpanded)
+            if (!checkInsExpanded) setTrainExpanded(false) // Close other dropdown
+          }}
+          onSelect={handleNavigate}
+        />
+
+        {/* Train Dropdown (Tools + Modules) */}
+        <TrainDropdown
+          isExpanded={trainExpanded}
+          onToggle={() => {
+            setTrainExpanded(!trainExpanded)
+            if (!trainExpanded) setCheckInsExpanded(false) // Close other dropdown
+          }}
+          onSelect={handleNavigate}
+        />
+      </div>
+
+      {/* Footer tip */}
+      <p className="text-center text-sm text-gray-400 mt-8">
+        Build consistency by checking in daily
+      </p>
+    </main>
   )
 }

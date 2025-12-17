@@ -10,7 +10,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db, get_current_active_user
 from app.models.user import User
-from app.models.checkin import CheckIn, EMOTION_CONFIG, BODY_AREAS, Emotion
+from app.models.checkin import (
+    CheckIn,
+    CheckInType,
+    EMOTION_CONFIG,
+    BODY_AREAS,
+    Emotion,
+    BREATHING_CONFIG,
+    BreathingExerciseType,
+    CONFIDENCE_SOURCES,
+    CONFIDENCE_ACTIONS,
+    ENERGY_FACTORS,
+    ENERGY_ACTIONS,
+)
 from app.models.membership import Membership
 from app.schemas.checkin import (
     CheckInCreate,
@@ -20,6 +32,21 @@ from app.schemas.checkin import (
     EmotionsConfigOut,
     EmotionConfig,
     ActionCompletionUpdate,
+    BreathingConfigOut,
+    BreathingExerciseConfig,
+    BreathingTimingConfig,
+    BreathingCheckInCreate,
+    BreathingCheckInOut,
+    ConfidenceConfigOut,
+    ConfidenceSourceItem,
+    ConfidenceLevelActions,
+    ConfidenceCheckInCreate,
+    ConfidenceCheckInOut,
+    EnergyConfigOut,
+    EnergyFactorItem,
+    EnergyStateActions,
+    EnergyCheckInCreate,
+    EnergyCheckInOut,
 )
 
 router = APIRouter()
@@ -54,6 +81,122 @@ async def get_emotions_config(
     ]
 
     return EmotionsConfigOut(emotions=emotions, body_areas=body_areas)
+
+
+@router.get("/breathing/exercises", response_model=BreathingConfigOut)
+async def get_breathing_exercises_config(
+    current_user: User = Depends(get_current_active_user),
+):
+    """Get all breathing exercises with their configurations for the check-in flow."""
+    exercises = []
+    for exercise_type, config in BREATHING_CONFIG.items():
+        timing = config["timing"]
+        exercises.append(
+            BreathingExerciseConfig(
+                key=exercise_type.value,
+                display_name=config["display_name"],
+                technique=config["technique"],
+                description=config["description"],
+                triggers=config["triggers"],
+                timing=BreathingTimingConfig(
+                    inhale=timing["inhale"],
+                    hold_in=timing["hold_in"],
+                    exhale=timing["exhale"],
+                    hold_out=timing["hold_out"],
+                    second_inhale=timing.get("second_inhale"),
+                ),
+                cycles=config["cycles"],
+                instructions=config["instructions"],
+                category=config["category"],
+            )
+        )
+
+    return BreathingConfigOut(exercises=exercises)
+
+
+@router.post("/breathing", response_model=BreathingCheckInOut, status_code=status.HTTP_201_CREATED)
+async def create_breathing_checkin(
+    checkin: BreathingCheckInCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Create a new breathing check-in."""
+    # Verify user has membership in the organization
+    membership_result = await db.execute(
+        select(Membership)
+        .where(Membership.user_id == current_user.id)
+        .where(Membership.organization_id == checkin.organization_id)
+    )
+    membership = membership_result.scalar_one_or_none()
+
+    if not membership:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not a member of this organization"
+        )
+
+    # Validate breathing exercise type
+    valid_types = [e.value for e in BreathingExerciseType]
+    if checkin.breathing_exercise_type not in valid_types:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid breathing exercise type. Must be one of: {', '.join(valid_types)}"
+        )
+
+    # Validate trigger if provided
+    if checkin.trigger_selected:
+        exercise_config = BREATHING_CONFIG.get(
+            BreathingExerciseType(checkin.breathing_exercise_type)
+        )
+        if exercise_config and checkin.trigger_selected not in exercise_config["triggers"]:
+            # Just log a warning, don't reject - user might have custom reason
+            pass
+
+    # Create the breathing check-in
+    new_checkin = CheckIn(
+        user_id=current_user.id,
+        organization_id=checkin.organization_id,
+        check_in_type=CheckInType.BREATHING.value,
+        breathing_exercise_type=checkin.breathing_exercise_type,
+        cycles_completed=checkin.cycles_completed,
+        duration_seconds=checkin.duration_seconds,
+        trigger_selected=checkin.trigger_selected,
+        effectiveness_rating=checkin.effectiveness_rating,
+        notes=checkin.notes,
+    )
+
+    db.add(new_checkin)
+    await db.commit()
+    await db.refresh(new_checkin)
+
+    return new_checkin
+
+
+@router.get("/breathing/me/today")
+async def get_today_breathing_status(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Check if user has completed a breathing check-in today."""
+    today = date.today()
+    start_of_day = datetime.combine(today, datetime.min.time())
+    end_of_day = datetime.combine(today, datetime.max.time())
+
+    result = await db.execute(
+        select(CheckIn)
+        .where(CheckIn.user_id == current_user.id)
+        .where(CheckIn.check_in_type == CheckInType.BREATHING.value)
+        .where(CheckIn.created_at >= start_of_day)
+        .where(CheckIn.created_at <= end_of_day)
+        .order_by(CheckIn.created_at.desc())
+    )
+    check_ins = result.scalars().all()
+
+    return {
+        "has_checked_in_today": len(check_ins) > 0,
+        "count_today": len(check_ins),
+        "check_ins": [BreathingCheckInOut.model_validate(c) for c in check_ins],
+    }
 
 
 @router.get("/me/today", response_model=TodayCheckInStatus)
@@ -283,4 +426,245 @@ async def get_weekly_stats(
         "actions_completed": actions_completed,
         "actions_total": actions_total,
         "check_in_dates": [c.created_at.date().isoformat() for c in check_ins],
+    }
+
+
+# === Confidence Check-In Endpoints ===
+
+def get_confidence_level_category(level: int) -> str:
+    """Get the action category based on confidence level."""
+    if level <= 2:
+        return "low"
+    elif level <= 4:
+        return "moderate"
+    elif level <= 6:
+        return "high"
+    else:
+        return "peak"
+
+
+@router.get("/confidence/config", response_model=ConfidenceConfigOut)
+async def get_confidence_config(
+    current_user: User = Depends(get_current_active_user),
+):
+    """Get confidence check-in configuration for the frontend."""
+    confidence_sources = [
+        ConfidenceSourceItem(**source) for source in CONFIDENCE_SOURCES["confidence"]
+    ]
+    doubt_sources = [
+        ConfidenceSourceItem(**source) for source in CONFIDENCE_SOURCES["doubt"]
+    ]
+    level_actions = {
+        key: ConfidenceLevelActions(**value)
+        for key, value in CONFIDENCE_ACTIONS.items()
+    }
+
+    return ConfidenceConfigOut(
+        confidence_sources=confidence_sources,
+        doubt_sources=doubt_sources,
+        level_actions=level_actions,
+    )
+
+
+@router.post("/confidence", response_model=ConfidenceCheckInOut, status_code=status.HTTP_201_CREATED)
+async def create_confidence_checkin(
+    checkin: ConfidenceCheckInCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Create a new confidence check-in."""
+    # Verify user has membership in the organization
+    membership_result = await db.execute(
+        select(Membership)
+        .where(Membership.user_id == current_user.id)
+        .where(Membership.organization_id == checkin.organization_id)
+    )
+    membership = membership_result.scalar_one_or_none()
+
+    if not membership:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not a member of this organization"
+        )
+
+    # Validate confidence level
+    if checkin.confidence_level < 1 or checkin.confidence_level > 7:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Confidence level must be between 1 and 7"
+        )
+
+    # Create the confidence check-in
+    new_checkin = CheckIn(
+        user_id=current_user.id,
+        organization_id=checkin.organization_id,
+        check_in_type=CheckInType.CONFIDENCE.value,
+        confidence_level=checkin.confidence_level,
+        confidence_sources=checkin.confidence_sources,
+        doubt_sources=checkin.doubt_sources,
+        confidence_commitment=checkin.confidence_commitment,
+        selected_action=checkin.selected_action,
+        notes=checkin.notes,
+    )
+
+    db.add(new_checkin)
+    await db.commit()
+    await db.refresh(new_checkin)
+
+    return new_checkin
+
+
+@router.get("/confidence/me/today")
+async def get_today_confidence_status(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Check if user has completed a confidence check-in today."""
+    today = date.today()
+    start_of_day = datetime.combine(today, datetime.min.time())
+    end_of_day = datetime.combine(today, datetime.max.time())
+
+    result = await db.execute(
+        select(CheckIn)
+        .where(CheckIn.user_id == current_user.id)
+        .where(CheckIn.check_in_type == CheckInType.CONFIDENCE.value)
+        .where(CheckIn.created_at >= start_of_day)
+        .where(CheckIn.created_at <= end_of_day)
+        .order_by(CheckIn.created_at.desc())
+    )
+    check_ins = result.scalars().all()
+
+    return {
+        "has_checked_in_today": len(check_ins) > 0,
+        "count_today": len(check_ins),
+        "check_ins": [ConfidenceCheckInOut.model_validate(c) for c in check_ins],
+    }
+
+
+# === Energy Check-In Endpoints ===
+
+def get_energy_state(physical: int, mental: int) -> str:
+    """Calculate energy state based on physical and mental levels."""
+    # Low: 1-3, Moderate: 4, High: 5-7
+    p_low = physical <= 3
+    p_high = physical >= 5
+    m_low = mental <= 3
+    m_high = mental >= 5
+
+    if p_low and m_low:
+        return "low_low"
+    elif p_low and m_high:
+        return "low_high"
+    elif p_high and m_low:
+        return "high_low"
+    elif p_high and m_high:
+        return "high_high"
+    else:
+        return "moderate"
+
+
+@router.get("/energy/config", response_model=EnergyConfigOut)
+async def get_energy_config(
+    current_user: User = Depends(get_current_active_user),
+):
+    """Get energy check-in configuration for the frontend."""
+    physical_factors = [
+        EnergyFactorItem(**factor) for factor in ENERGY_FACTORS["physical"]
+    ]
+    mental_factors = [
+        EnergyFactorItem(**factor) for factor in ENERGY_FACTORS["mental"]
+    ]
+    state_actions = {
+        key: EnergyStateActions(**value)
+        for key, value in ENERGY_ACTIONS.items()
+    }
+
+    return EnergyConfigOut(
+        physical_factors=physical_factors,
+        mental_factors=mental_factors,
+        state_actions=state_actions,
+    )
+
+
+@router.post("/energy", response_model=EnergyCheckInOut, status_code=status.HTTP_201_CREATED)
+async def create_energy_checkin(
+    checkin: EnergyCheckInCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Create a new energy check-in."""
+    # Verify user has membership in the organization
+    membership_result = await db.execute(
+        select(Membership)
+        .where(Membership.user_id == current_user.id)
+        .where(Membership.organization_id == checkin.organization_id)
+    )
+    membership = membership_result.scalar_one_or_none()
+
+    if not membership:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not a member of this organization"
+        )
+
+    # Validate energy levels
+    if checkin.physical_energy < 1 or checkin.physical_energy > 7:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Physical energy must be between 1 and 7"
+        )
+    if checkin.mental_energy < 1 or checkin.mental_energy > 7:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Mental energy must be between 1 and 7"
+        )
+
+    # Calculate energy state
+    energy_state = get_energy_state(checkin.physical_energy, checkin.mental_energy)
+
+    # Create the energy check-in
+    new_checkin = CheckIn(
+        user_id=current_user.id,
+        organization_id=checkin.organization_id,
+        check_in_type=CheckInType.ENERGY.value,
+        physical_energy=checkin.physical_energy,
+        mental_energy=checkin.mental_energy,
+        physical_factors=checkin.physical_factors,
+        mental_factors=checkin.mental_factors,
+        energy_state=energy_state,
+        selected_action=checkin.selected_action,
+        notes=checkin.notes,
+    )
+
+    db.add(new_checkin)
+    await db.commit()
+    await db.refresh(new_checkin)
+
+    return new_checkin
+
+
+@router.get("/energy/me/today")
+async def get_today_energy_status(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Check if user has completed an energy check-in today."""
+    today = date.today()
+    start_of_day = datetime.combine(today, datetime.min.time())
+    end_of_day = datetime.combine(today, datetime.max.time())
+
+    result = await db.execute(
+        select(CheckIn)
+        .where(CheckIn.user_id == current_user.id)
+        .where(CheckIn.check_in_type == CheckInType.ENERGY.value)
+        .where(CheckIn.created_at >= start_of_day)
+        .where(CheckIn.created_at <= end_of_day)
+        .order_by(CheckIn.created_at.desc())
+    )
+    check_ins = result.scalars().all()
+
+    return {
+        "has_checked_in_today": len(check_ins) > 0,
+        "count_today": len(check_ins),
+        "check_ins": [EnergyCheckInOut.model_validate(c) for c in check_ins],
     }

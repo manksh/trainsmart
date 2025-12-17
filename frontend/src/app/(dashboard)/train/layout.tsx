@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { apiGet } from '@/lib/api'
 import { TopNav } from '@/components/layout'
 
-export default function AthleteLayout({
+export default function TrainLayout({
   children,
 }: {
   children: React.ReactNode
@@ -19,7 +19,6 @@ export default function AthleteLayout({
     const checkAthleteRole = async () => {
       if (!user) return
 
-      // SuperAdmins should go to their dashboard
       if (user.is_superadmin) {
         router.push('/superadmin')
         return
@@ -31,17 +30,15 @@ export default function AthleteLayout({
           (m: any) => m.role === 'admin'
         )
 
-        // If user is an admin, redirect to admin dashboard
         if (hasAdminRole) {
           router.push('/admin')
           return
         }
 
-        // User is an athlete
         setIsAthlete(true)
       } catch (err) {
         console.error('Failed to check role:', err)
-        setIsAthlete(true) // Default to athlete view on error
+        setIsAthlete(true)
       }
     }
 
