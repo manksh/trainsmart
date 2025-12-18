@@ -32,3 +32,5 @@ Thumbs.db
 venv/
 .venv/
 *.pyo
+github-actions-key.json
+frontend/tsconfig.tsbuildinfo

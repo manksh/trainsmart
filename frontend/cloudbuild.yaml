@@ -1,0 +1,12 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_API_URL=https://trainsmart-backend-qsnf6wam4q-uc.a.run.app'
+      - '-t'
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/trainsmart/frontend:latest'
+      - '.'
+
+images:
+  - 'us-central1-docker.pkg.dev/$PROJECT_ID/trainsmart/frontend:latest'
