@@ -15,6 +15,12 @@ from app.models.journal import (
     OPEN_ENDED_TAGS,
     OPEN_ENDED_PROMPTS,
 )
+from app.models.training_module import (
+    TrainingModule,
+    ModuleProgress,
+    ModuleStatus,
+    BEING_HUMAN_CONTENT,
+)
 
 __all__ = [
     "User",
@@ -39,4 +45,8 @@ __all__ = [
     "EMOTION_OPTIONS",
     "OPEN_ENDED_TAGS",
     "OPEN_ENDED_PROMPTS",
+    "TrainingModule",
+    "ModuleProgress",
+    "ModuleStatus",
+    "BEING_HUMAN_CONTENT",
 ]

@@ -22,6 +22,7 @@ class MembershipResponse(MembershipBase):
     invited_at: datetime
     joined_at: Optional[datetime]
     created_at: datetime
+    organization_name: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 

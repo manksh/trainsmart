@@ -55,5 +55,10 @@ class Membership(Base):
     user = relationship("User", back_populates="memberships", lazy="selectin")
     organization = relationship("Organization", back_populates="memberships", lazy="selectin")
 
+    @property
+    def organization_name(self) -> Optional[str]:
+        """Get organization name from relationship for Pydantic serialization."""
+        return self.organization.name if self.organization else None
+
     def __repr__(self) -> str:
         return f"<Membership {self.user_id} in {self.organization_id} as {self.role}>"

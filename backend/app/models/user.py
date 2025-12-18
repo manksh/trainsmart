@@ -39,6 +39,7 @@ class User(Base):
     invites_sent = relationship("Invite", back_populates="created_by_user", foreign_keys="[Invite.created_by]", lazy="selectin")
     check_ins = relationship("CheckIn", back_populates="user", lazy="selectin")
     journal_entries = relationship("JournalEntry", back_populates="user", lazy="selectin")
+    module_progress = relationship("ModuleProgress", back_populates="user", lazy="selectin")
 
     @property
     def full_name(self) -> str:
