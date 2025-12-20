@@ -37,6 +37,12 @@ export default function TapRevealColumns({
       text: 'text-blue-600',
       border: 'border-blue-200',
     },
+    amber: {
+      bg: 'bg-amber-600',
+      bgLight: 'bg-amber-50',
+      text: 'text-amber-600',
+      border: 'border-amber-200',
+    },
   }
 
   const colors = colorClasses[moduleColor] || colorClasses.purple

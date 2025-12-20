@@ -24,7 +24,7 @@ from app.services.scoring import score_assessment
 router = APIRouter()
 
 
-@router.get("/", response_model=list[AssessmentSummary])
+@router.get("", response_model=list[AssessmentSummary])
 async def list_assessments(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),

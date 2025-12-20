@@ -44,6 +44,7 @@ export async function api<T>(
     method,
     headers: requestHeaders,
     body: body ? JSON.stringify(body) : undefined,
+    cache: 'no-store', // Disable caching to always get fresh data
   })
 
   if (!response.ok) {

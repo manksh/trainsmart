@@ -40,6 +40,13 @@ export default function SingleTapReflection({
       border: 'border-blue-500',
       ring: 'ring-blue-500',
     },
+    amber: {
+      bg: 'bg-amber-600',
+      bgLight: 'bg-amber-50',
+      text: 'text-amber-600',
+      border: 'border-amber-500',
+      ring: 'ring-amber-500',
+    },
   }
 
   const colors = colorClasses[moduleColor] || colorClasses.purple

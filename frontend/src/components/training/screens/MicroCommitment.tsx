@@ -47,6 +47,14 @@ export default function MicroCommitment({
       ring: 'ring-blue-500',
       gradient: 'from-blue-50 to-white',
     },
+    amber: {
+      bg: 'bg-amber-600',
+      bgLight: 'bg-amber-50',
+      text: 'text-amber-600',
+      border: 'border-amber-500',
+      ring: 'ring-amber-500',
+      gradient: 'from-amber-50 to-white',
+    },
   }
 
   const colors = colorClasses[moduleColor] || colorClasses.purple

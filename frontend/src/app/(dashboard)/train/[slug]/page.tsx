@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter, useParams } from 'next/navigation'
+import { useState, useEffect, useCallback } from 'react'
+import { useRouter, useParams, usePathname } from 'next/navigation'
 import { apiGet, apiPost } from '@/lib/api'
 
 interface Activity {
@@ -131,11 +131,18 @@ const colorClasses: Record<string, { bg: string; bgLight: string; text: string; 
     text: 'text-blue-600',
     border: 'border-blue-200',
   },
+  amber: {
+    bg: 'bg-amber-600',
+    bgLight: 'bg-amber-50',
+    text: 'text-amber-600',
+    border: 'border-amber-200',
+  },
 }
 
 export default function ModuleOverviewPage() {
   const router = useRouter()
   const params = useParams()
+  const pathname = usePathname()
   const slug = params.slug as string
 
   const [module, setModule] = useState<ModuleContent | null>(null)
@@ -144,32 +151,36 @@ export default function ModuleOverviewPage() {
   const [isStarting, setIsStarting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [orgId, setOrgId] = useState<string | null>(null)
+  const [refreshKey, setRefreshKey] = useState(0)
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        // Fetch module, progress, and user data in parallel
-        const [moduleData, progressData, fullUser] = await Promise.all([
-          apiGet<ModuleContent>(`/training-modules/${slug}`),
-          apiGet<ModuleProgress | null>(`/training-modules/progress/me/${slug}`).catch(() => null),
-          apiGet<FullUser>('/users/me/full'),
-        ])
-        setModule(moduleData)
-        setProgress(progressData)
+  const loadData = useCallback(async () => {
+    setIsLoading(true)
+    try {
+      // Fetch module, progress, and user data in parallel
+      const [moduleData, progressData, fullUser] = await Promise.all([
+        apiGet<ModuleContent>(`/training-modules/${slug}`),
+        apiGet<ModuleProgress | null>(`/training-modules/progress/me/${slug}`).catch(() => null),
+        apiGet<FullUser>('/users/me/full'),
+      ])
+      setModule(moduleData)
+      setProgress(progressData)
 
-        // Get organization_id from user's membership
-        if (fullUser.memberships && fullUser.memberships.length > 0) {
-          setOrgId(fullUser.memberships[0].organization_id)
-        }
-      } catch (err) {
-        console.error('Failed to load module:', err)
-        setError('Failed to load module')
-      } finally {
-        setIsLoading(false)
+      // Get organization_id from user's membership
+      if (fullUser.memberships && fullUser.memberships.length > 0) {
+        setOrgId(fullUser.memberships[0].organization_id)
       }
+    } catch (err) {
+      console.error('Failed to load module:', err)
+      setError('Failed to load module')
+    } finally {
+      setIsLoading(false)
     }
-    loadData()
   }, [slug])
+
+  // Reload data when navigating to this page (pathname changes) or when refresh is triggered
+  useEffect(() => {
+    loadData()
+  }, [loadData, pathname, refreshKey])
 
   const handleStart = async () => {
     if (!module) {
@@ -279,7 +290,9 @@ export default function ModuleOverviewPage() {
   }
 
   const getActivityStatus = (activityId: string, index: number): 'locked' | 'available' | 'completed' | 'in_progress' => {
-    if (!progress) return index === 0 ? 'available' : 'locked'
+    if (!progress) {
+      return index === 0 ? 'available' : 'locked'
+    }
 
     if (progress.is_completed) return 'completed'
 
@@ -326,7 +339,21 @@ export default function ModuleOverviewPage() {
     return Math.round((completedSections / totalSections) * 100)
   }
 
-  const handleStartActivity = (activityId: string) => {
+  const handleStartActivity = async (activityId: string) => {
+    // If no progress exists, create one first (same as handleStart)
+    if (!progress && orgId && module) {
+      try {
+        const newProgress = await apiPost<ModuleProgress>('/training-modules/progress/start', {
+          organization_id: orgId,
+          module_slug: slug,
+        })
+        setProgress(newProgress)
+      } catch (err) {
+        console.error('Failed to create progress:', err)
+        setError('Failed to start activity. Please try again.')
+        return
+      }
+    }
     router.push(`/train/${slug}/activity/${activityId}`)
   }
 

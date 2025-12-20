@@ -135,25 +135,35 @@ export default function ActivityPage() {
       // Activity complete - mark activity as completed
       if (progress?.id) {
         try {
-          const activitiesCompleted = [
-            ...(progress.progress_data?.activities_completed || []),
-            activityId,
-          ]
+          // Build the new activities_completed array, ensuring no duplicates
+          const existingCompleted = progress.progress_data?.activities_completed || []
+          const activitiesCompleted = existingCompleted.includes(activityId)
+            ? existingCompleted
+            : [...existingCompleted, activityId]
 
-          await apiPatch(`/training-modules/progress/${progress.id}`, {
-            progress_data: {
-              ...progress.progress_data,
-              activities_completed: activitiesCompleted,
-              current_activity: activityId,
-              current_screen: currentScreenIndex,
-            },
-          })
+          // Save the completion - wait for it to finish before navigating
+          const response = await apiPatch<{ progress_data: SequentialProgressData }>(
+            `/training-modules/progress/${progress.id}`,
+            {
+              progress_data: {
+                ...progress.progress_data,
+                activities_completed: activitiesCompleted,
+                current_activity: null, // Clear current activity since we're done
+                current_screen: 0,
+              },
+            }
+          )
+
+          // Verify the save was successful by checking the response
+          if (!response?.progress_data?.activities_completed?.includes(activityId)) {
+            console.error('Activity completion may not have been saved correctly')
+          }
 
           // Check if this was the last activity
           const content = module?.content as SequentialModuleContent
           const allActivities = content?.activities || []
-          const isModuleComplete = allActivities.every(
-            (a) => activitiesCompleted.includes(a.id) || a.id === activityId
+          const isModuleComplete = allActivities.every((a) =>
+            activitiesCompleted.includes(a.id)
           )
 
           if (isModuleComplete) {
@@ -168,13 +178,18 @@ export default function ActivityPage() {
               }
             )
           }
+
+          // Navigate back to module overview after successful save
+          router.push(`/train/${slug}`)
         } catch (err) {
           console.error('Failed to complete activity:', err)
+          // Still navigate even on error, but user might see stale state
+          router.push(`/train/${slug}`)
         }
+      } else {
+        // No progress record, just navigate
+        router.push(`/train/${slug}`)
       }
-
-      // Navigate back to module overview
-      router.push(`/train/${slug}`)
     } else {
       // Move to next screen
       const nextIndex = currentScreenIndex + 1
@@ -182,13 +197,17 @@ export default function ActivityPage() {
 
       // Save position
       if (progress?.id) {
-        await apiPatch(`/training-modules/progress/${progress.id}`, {
-          progress_data: {
-            ...progress.progress_data,
-            current_activity: activityId,
-            current_screen: nextIndex,
-          },
-        })
+        try {
+          await apiPatch(`/training-modules/progress/${progress.id}`, {
+            progress_data: {
+              ...progress.progress_data,
+              current_activity: activityId,
+              current_screen: nextIndex,
+            },
+          })
+        } catch (err) {
+          console.error('Failed to save screen position:', err)
+        }
       }
     }
   }, [isLastScreen, progress, activityId, currentScreenIndex, module, router, slug])

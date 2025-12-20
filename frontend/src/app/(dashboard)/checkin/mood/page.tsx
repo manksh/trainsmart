@@ -136,7 +136,7 @@ export default function MoodCheckInPage() {
 
     setIsSubmitting(true)
     try {
-      await apiPost('/checkins/', {
+      await apiPost('/checkins', {
         organization_id: fullUser.memberships[0].organization_id,
         check_in_type: 'mood',
         emotion: selectedEmotion,

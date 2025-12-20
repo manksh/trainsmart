@@ -58,6 +58,63 @@ class TestCreateCheckIn:
     """Tests for creating check-ins."""
 
     @pytest.mark.asyncio
+    async def test_create_mood_checkin_no_trailing_slash(
+        self,
+        client: AsyncClient,
+        athlete_token: str,
+        organization: Organization,
+    ):
+        """Should create mood check-in at /checkins (no trailing slash).
+
+        This test ensures the endpoint works without trailing slash.
+        The backend has redirect_slashes=False, so the frontend must use
+        the exact path. This test will catch URL mismatches.
+        """
+        response = await client.post(
+            "/api/v1/checkins",  # No trailing slash - matches backend route
+            headers=auth_headers(athlete_token),
+            json={
+                "organization_id": str(organization.id),
+                "check_in_type": "mood",
+                "emotion": "calm",
+                "intensity": 3,
+                "body_areas": ["chest"],
+            },
+        )
+
+        assert response.status_code == 201
+        data = response.json()
+        assert data["check_in_type"] == "mood"
+        assert data["emotion"] == "calm"
+
+    @pytest.mark.asyncio
+    async def test_create_checkin_trailing_slash_returns_404(
+        self,
+        client: AsyncClient,
+        athlete_token: str,
+        organization: Organization,
+    ):
+        """Trailing slash should return 404 since redirect_slashes=False.
+
+        This test documents the expected behavior and will catch if
+        someone accidentally enables redirect_slashes or changes routing.
+        """
+        response = await client.post(
+            "/api/v1/checkins/",  # WITH trailing slash - should fail
+            headers=auth_headers(athlete_token),
+            json={
+                "organization_id": str(organization.id),
+                "check_in_type": "mood",
+                "emotion": "happy",
+                "intensity": 4,
+                "body_areas": ["head"],
+            },
+        )
+
+        # With redirect_slashes=False, trailing slash returns 404
+        assert response.status_code == 404
+
+    @pytest.mark.asyncio
     async def test_create_checkin_success(
         self,
         client: AsyncClient,
@@ -65,8 +122,10 @@ class TestCreateCheckIn:
         organization: Organization,
     ):
         """Should create a check-in successfully."""
+        # Note: Using /checkins without trailing slash to match backend route definition
+        # Backend has redirect_slashes=False, so trailing slash would cause 404
         response = await client.post(
-            "/api/v1/checkins/",
+            "/api/v1/checkins",
             headers=auth_headers(athlete_token),
             json={
                 "organization_id": str(organization.id),
@@ -96,7 +155,7 @@ class TestCreateCheckIn:
     ):
         """Should create a check-in with minimal required fields."""
         response = await client.post(
-            "/api/v1/checkins/",
+            "/api/v1/checkins",
             headers=auth_headers(athlete_token),
             json={
                 "organization_id": str(organization.id),
@@ -120,7 +179,7 @@ class TestCreateCheckIn:
     ):
         """Should reject invalid emotion."""
         response = await client.post(
-            "/api/v1/checkins/",
+            "/api/v1/checkins",
             headers=auth_headers(athlete_token),
             json={
                 "organization_id": str(organization.id),
@@ -142,7 +201,7 @@ class TestCreateCheckIn:
     ):
         """Should reject intensity outside 1-5 range."""
         response = await client.post(
-            "/api/v1/checkins/",
+            "/api/v1/checkins",
             headers=auth_headers(athlete_token),
             json={
                 "organization_id": str(organization.id),
@@ -163,7 +222,7 @@ class TestCreateCheckIn:
     ):
         """Should reject invalid body area."""
         response = await client.post(
-            "/api/v1/checkins/",
+            "/api/v1/checkins",
             headers=auth_headers(athlete_token),
             json={
                 "organization_id": str(organization.id),
@@ -199,7 +258,7 @@ class TestCreateCheckIn:
         await db_session.commit()
 
         response = await client.post(
-            "/api/v1/checkins/",
+            "/api/v1/checkins",
             headers=auth_headers(athlete_token),
             json={
                 "organization_id": str(other_org.id),
@@ -225,7 +284,7 @@ class TestGetCheckIns:
         """Should return user's check-in history."""
         # Create a check-in first
         await client.post(
-            "/api/v1/checkins/",
+            "/api/v1/checkins",
             headers=auth_headers(athlete_token),
             json={
                 "organization_id": str(organization.id),
@@ -275,7 +334,7 @@ class TestGetCheckIns:
         """Should indicate check-in exists when one was made today."""
         # Create a check-in
         await client.post(
-            "/api/v1/checkins/",
+            "/api/v1/checkins",
             headers=auth_headers(athlete_token),
             json={
                 "organization_id": str(organization.id),
@@ -310,7 +369,7 @@ class TestActionCompletion:
         """Should update action completion status."""
         # Create a check-in with an action
         create_response = await client.post(
-            "/api/v1/checkins/",
+            "/api/v1/checkins",
             headers=auth_headers(athlete_token),
             json={
                 "organization_id": str(organization.id),
@@ -349,7 +408,7 @@ class TestWeeklyStats:
         # Create a few check-ins
         for emotion in ["happy", "calm", "happy"]:
             await client.post(
-                "/api/v1/checkins/",
+                "/api/v1/checkins",
                 headers=auth_headers(athlete_token),
                 json={
                     "organization_id": str(organization.id),
@@ -421,7 +480,7 @@ class TestWeeklyActivity:
         """Should show activity for days with check-ins."""
         # Create a mood check-in (today)
         await client.post(
-            "/api/v1/checkins/",
+            "/api/v1/checkins",
             headers=auth_headers(athlete_token),
             json={
                 "organization_id": str(organization.id),
@@ -460,7 +519,7 @@ class TestWeeklyActivity:
         """Should count any check-in type as activity."""
         # Create different types of check-ins (all today)
         await client.post(
-            "/api/v1/checkins/",
+            "/api/v1/checkins",
             headers=auth_headers(athlete_token),
             json={
                 "organization_id": str(organization.id),

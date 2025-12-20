@@ -12,6 +12,7 @@ const colorClasses: Record<string, string> = {
   emerald: 'bg-emerald-600 hover:bg-emerald-700',
   purple: 'bg-purple-600 hover:bg-purple-700',
   blue: 'bg-blue-600 hover:bg-blue-700',
+  amber: 'bg-amber-600 hover:bg-amber-700',
 }
 
 export default function ScreenFooter({

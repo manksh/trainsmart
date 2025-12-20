@@ -36,6 +36,12 @@ export default function ActivityCompletion({
       text: 'text-blue-600',
       gradient: 'from-blue-50 to-white',
     },
+    amber: {
+      bg: 'bg-amber-600',
+      bgLight: 'bg-amber-50',
+      text: 'text-amber-600',
+      gradient: 'from-amber-50 to-white',
+    },
   }
 
   const colors = colorClasses[moduleColor] || colorClasses.purple

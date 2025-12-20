@@ -328,13 +328,33 @@ async def start_module(
             updated_at=existing.updated_at,
         )
 
+    # Initialize progress_data based on module flow type
+    module_content = module.content or {}
+    flow_type = module_content.get("flow_type")
+
+    if flow_type == "sequential_activities":
+        # For sequential activities modules (About Performance, Building Confidence)
+        initial_progress_data = {
+            "activities_completed": [],
+            "current_activity": None,
+            "current_screen": 0,
+            "screen_responses": {},
+        }
+    else:
+        # For sections-based modules (Being Human)
+        initial_progress_data = {
+            "cards_viewed": [],
+            "sections_completed": [],
+            "examples_viewed": [],
+        }
+
     # Create new progress record
     progress = ModuleProgress(
         user_id=current_user.id,
         organization_id=data.organization_id,
         module_id=module.id,
         is_started=True,
-        progress_data={"cards_viewed": [], "sections_completed": [], "examples_viewed": []},
+        progress_data=initial_progress_data,
         activity_responses={},
         personal_selections={},
     )

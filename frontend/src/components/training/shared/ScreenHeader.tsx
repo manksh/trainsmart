@@ -13,6 +13,7 @@ const colorClasses: Record<string, string> = {
   emerald: 'bg-emerald-600',
   purple: 'bg-purple-600',
   blue: 'bg-blue-600',
+  amber: 'bg-amber-600',
 }
 
 export default function ScreenHeader({

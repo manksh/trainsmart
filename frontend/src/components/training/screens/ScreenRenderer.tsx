@@ -4,6 +4,8 @@ import {
   Screen,
   ScreenResponse,
   SwipeCardContent,
+  StaticCardContent,
+  TapRevealListContent,
   FullScreenStatementContent,
   SingleTapReflectionContent,
   TapRevealColumnsContent,
@@ -12,8 +14,15 @@ import {
   MicroCommitmentContent,
   MicroCommitmentConfirmationContent,
   ActivityCompletionContent,
+  EmojiSelectContent,
+  MultiSelectContent,
+  TextInputContent,
+  ConfirmationDisplayContent,
+  CategoryToggleContent,
 } from '../types'
 import SwipeCard from './SwipeCard'
+import StaticCard from './StaticCard'
+import TapRevealList from './TapRevealList'
 import FullScreenStatement from './FullScreenStatement'
 import SingleTapReflection from './SingleTapReflection'
 import TapRevealColumns from './TapRevealColumns'
@@ -22,6 +31,11 @@ import RecognitionList from './RecognitionList'
 import MicroCommitment from './MicroCommitment'
 import MicroCommitmentConfirmation from './MicroCommitmentConfirmation'
 import ActivityCompletion from './ActivityCompletion'
+import EmojiSelect from './EmojiSelect'
+import MultiSelect from './MultiSelect'
+import TextInput from './TextInput'
+import ConfirmationDisplay from './ConfirmationDisplay'
+import CategoryToggle from './CategoryToggle'
 
 interface ScreenRendererProps {
   screen: Screen
@@ -50,6 +64,38 @@ export default function ScreenRenderer({
   switch (screen.type) {
     case 'swipe_card':
       return <SwipeCard {...commonProps} content={screen.content as SwipeCardContent} />
+
+    case 'static_card':
+      return <StaticCard {...commonProps} content={screen.content as StaticCardContent} />
+
+    case 'tap_reveal_list':
+      return <TapRevealList {...commonProps} content={screen.content as TapRevealListContent} />
+
+    case 'emoji_select':
+      return <EmojiSelect {...commonProps} content={screen.content as EmojiSelectContent} />
+
+    case 'multi_select':
+      return <MultiSelect {...commonProps} content={screen.content as MultiSelectContent} />
+
+    case 'text_input':
+      return <TextInput {...commonProps} content={screen.content as TextInputContent} />
+
+    case 'confirmation_display':
+      return (
+        <ConfirmationDisplay
+          {...commonProps}
+          content={screen.content as ConfirmationDisplayContent}
+          allScreenResponses={allScreenResponses}
+        />
+      )
+
+    case 'category_toggle':
+      return (
+        <CategoryToggle
+          {...commonProps}
+          content={screen.content as CategoryToggleContent}
+        />
+      )
 
     case 'full_screen_statement':
       return (
@@ -138,6 +184,7 @@ function PlaceholderScreen({
     emerald: 'bg-emerald-600',
     purple: 'bg-purple-600',
     blue: 'bg-blue-600',
+    amber: 'bg-amber-600',
   }
 
   const bgColor = colorClasses[moduleColor] || colorClasses.purple

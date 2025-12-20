@@ -27,6 +27,11 @@ export default function FullScreenStatement({
       gradient: 'from-blue-50 to-white',
       text: 'text-blue-600',
     },
+    amber: {
+      bg: 'bg-amber-600',
+      gradient: 'from-amber-50 to-white',
+      text: 'text-amber-600',
+    },
   }
 
   const colors = colorClasses[moduleColor] || colorClasses.purple

@@ -264,7 +264,7 @@ async def get_my_checkins(
     )
 
 
-@router.post("/", response_model=CheckInOut, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=CheckInOut, status_code=status.HTTP_201_CREATED)
 async def create_checkin(
     checkin: CheckInCreate,
     db: AsyncSession = Depends(get_db),
