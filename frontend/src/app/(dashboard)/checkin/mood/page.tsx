@@ -37,6 +37,7 @@ interface FullUser {
 }
 
 type Step =
+  | 'overview'
   | 'education'
   | 'intro'
   | 'emotion'
@@ -46,6 +47,21 @@ type Step =
   | 'action'
   | 'commit'
   | 'complete'
+
+interface CheckInHistoryItem {
+  id: string
+  check_in_type: string
+  emotion?: string
+  intensity?: number
+  created_at: string
+}
+
+interface CheckInHistoryData {
+  check_ins: CheckInHistoryItem[]
+  total: number
+  page: number
+  page_size: number
+}
 
 const EMOTION_EMOJIS: Record<string, string> = {
   happy: '😊',
@@ -77,12 +93,14 @@ const EDUCATION_STORAGE_KEY = 'trainsmart_mood_checkin_education_seen'
 export default function MoodCheckInPage() {
   const router = useRouter()
   const { user, isLoading: authLoading } = useAuth()
-  const [step, setStep] = useState<Step>('intro')
+  const [step, setStep] = useState<Step>('overview')
   const [emotionsConfig, setEmotionsConfig] = useState<EmotionsConfigResponse | null>(null)
   const [fullUser, setFullUser] = useState<FullUser | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [hasSeenEducation, setHasSeenEducation] = useState(true) // Default to true, will check localStorage
+  const [history, setHistory] = useState<CheckInHistoryData | null>(null)
+  const [showHistory, setShowHistory] = useState(false)
 
   // Form state
   const [selectedEmotion, setSelectedEmotion] = useState<string | null>(null)
@@ -91,28 +109,26 @@ export default function MoodCheckInPage() {
   const [selectedBodyAreas, setSelectedBodyAreas] = useState<string[]>([])
   const [selectedAction, setSelectedAction] = useState<string | null>(null)
 
-  useEffect(() => {
-    // Check if user has seen education screen
-    if (typeof window !== 'undefined') {
-      const seen = localStorage.getItem(EDUCATION_STORAGE_KEY)
-      if (!seen) {
-        setHasSeenEducation(false)
-        setStep('education')
-      }
-    }
-  }, [])
 
   useEffect(() => {
     const loadData = async () => {
       if (!user) return
 
       try {
-        const [config, userData] = await Promise.all([
+        const [config, userData, historyData] = await Promise.all([
           apiGet<EmotionsConfigResponse>('/checkins/emotions'),
           apiGet<FullUser>('/users/me/full'),
+          apiGet<CheckInHistoryData>('/checkins/me?page=1&page_size=50'),
         ])
         setEmotionsConfig(config)
         setFullUser(userData)
+        // Filter to only mood check-ins
+        const moodCheckIns = historyData.check_ins.filter(c => c.check_in_type === 'mood')
+        setHistory({
+          ...historyData,
+          check_ins: moodCheckIns,
+          total: moodCheckIns.length,
+        })
       } catch (err) {
         console.error('Failed to load data:', err)
       } finally {
@@ -129,6 +145,41 @@ export default function MoodCheckInPage() {
     localStorage.setItem(EDUCATION_STORAGE_KEY, 'true')
     setHasSeenEducation(true)
     setStep('intro')
+  }
+
+  const handleStartCheckin = () => {
+    // Check if user has seen education
+    if (typeof window !== 'undefined') {
+      const seen = localStorage.getItem(EDUCATION_STORAGE_KEY)
+      if (!seen) {
+        setHasSeenEducation(false)
+        setStep('education')
+        return
+      }
+    }
+    setStep('intro')
+  }
+
+  // Helper to get calendar data for the current month
+  const getCalendarData = () => {
+    const today = new Date()
+    const year = today.getFullYear()
+    const month = today.getMonth()
+    const firstDay = new Date(year, month, 1)
+    const lastDay = new Date(year, month + 1, 0)
+    const daysInMonth = lastDay.getDate()
+    const startDayOfWeek = firstDay.getDay() // 0 = Sunday
+
+    // Create a map of dates with check-ins
+    const checkInDates: Record<string, CheckInHistoryItem> = {}
+    history?.check_ins.forEach(c => {
+      const date = new Date(c.created_at).toDateString()
+      if (!checkInDates[date]) {
+        checkInDates[date] = c
+      }
+    })
+
+    return { year, month, daysInMonth, startDayOfWeek, checkInDates, today }
   }
 
   const handleSubmit = async () => {
@@ -166,21 +217,32 @@ export default function MoodCheckInPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
       <div className="max-w-lg mx-auto px-4 py-8">
-        {/* Back to selection button */}
-        {step !== 'complete' && (
+        {/* Back button */}
+        {step !== 'complete' && step !== 'overview' && (
           <button
-            onClick={() => router.push('/checkin')}
+            onClick={() => step === 'intro' || step === 'education' ? setStep('overview') : router.push('/checkin')}
             className="flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-4"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            Back to check-ins
+            {step === 'intro' || step === 'education' ? 'Back' : 'Back to check-ins'}
+          </button>
+        )}
+        {step === 'overview' && (
+          <button
+            onClick={() => router.push('/athlete')}
+            className="flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-4"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Back to dashboard
           </button>
         )}
 
         {/* Progress indicator */}
-        {step !== 'intro' && step !== 'complete' && step !== 'education' && (
+        {step !== 'intro' && step !== 'complete' && step !== 'education' && step !== 'overview' && (
           <div className="mb-8">
             <div className="flex justify-between mb-2">
               {['emotion', 'signal', 'intensity', 'body', 'action', 'commit'].map((s, i) => (
@@ -194,6 +256,150 @@ export default function MoodCheckInPage() {
                 />
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Step: Overview with Calendar */}
+        {step === 'overview' && (
+          <div className="animate-fadeIn">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-pink-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
+              </div>
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">Mood Check-In</h1>
+              <p className="text-gray-600">Track how you're feeling over time</p>
+            </div>
+
+            {/* Start Button */}
+            <Button onClick={handleStartCheckin} className="w-full mb-6">
+              Start New Check-In
+            </Button>
+
+            {/* Calendar View */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+              <h3 className="font-semibold text-gray-900 mb-4">
+                {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+              </h3>
+
+              {/* Day headers */}
+              <div className="grid grid-cols-7 gap-1 mb-2">
+                {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
+                  <div key={i} className="text-center text-xs font-medium text-gray-500 py-1">
+                    {day}
+                  </div>
+                ))}
+              </div>
+
+              {/* Calendar grid */}
+              <div className="grid grid-cols-7 gap-1">
+                {(() => {
+                  const { year, month, daysInMonth, startDayOfWeek, checkInDates, today } = getCalendarData()
+                  const cells = []
+
+                  // Empty cells for days before the first of the month
+                  for (let i = 0; i < startDayOfWeek; i++) {
+                    cells.push(<div key={`empty-${i}`} className="aspect-square" />)
+                  }
+
+                  // Days of the month
+                  for (let day = 1; day <= daysInMonth; day++) {
+                    const date = new Date(year, month, day)
+                    const dateStr = date.toDateString()
+                    const isToday = dateStr === today.toDateString()
+                    const checkIn = checkInDates[dateStr]
+                    const isPast = date < today && !isToday
+                    const isFuture = date > today
+
+                    cells.push(
+                      <div
+                        key={day}
+                        className={`aspect-square flex items-center justify-center rounded-full text-sm relative ${
+                          isToday
+                            ? 'ring-2 ring-pink-500 ring-offset-1'
+                            : ''
+                        } ${
+                          checkIn
+                            ? 'bg-pink-100 text-pink-700 font-medium'
+                            : isPast
+                              ? 'text-gray-400'
+                              : isFuture
+                                ? 'text-gray-300'
+                                : 'text-gray-700'
+                        }`}
+                        title={checkIn ? `${EMOTION_EMOJIS[checkIn.emotion || ''] || ''} ${checkIn.emotion || 'Check-in'}` : ''}
+                      >
+                        {checkIn ? (
+                          <span className="text-base">{EMOTION_EMOJIS[checkIn.emotion || ''] || day}</span>
+                        ) : (
+                          day
+                        )}
+                      </div>
+                    )
+                  }
+
+                  return cells
+                })()}
+              </div>
+
+              {/* Legend */}
+              <div className="flex items-center justify-center gap-4 mt-4 pt-4 border-t border-gray-100">
+                <div className="flex items-center gap-2 text-xs text-gray-500">
+                  <div className="w-4 h-4 rounded-full bg-pink-100"></div>
+                  <span>Check-in completed</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-gray-500">
+                  <div className="w-4 h-4 rounded-full ring-2 ring-pink-500 ring-offset-1"></div>
+                  <span>Today</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Expandable Check-in History */}
+            {history && history.check_ins.length > 0 && (
+              <div className="mt-4 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <button
+                  onClick={() => setShowHistory(!showHistory)}
+                  className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                >
+                  <span className="font-medium text-gray-900">
+                    Total check-ins: {history.total}
+                  </span>
+                  <svg
+                    className={`w-5 h-5 text-gray-400 transition-transform ${showHistory ? 'rotate-180' : ''}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {showHistory && (
+                  <div className="border-t border-gray-100 max-h-64 overflow-y-auto">
+                    {history.check_ins.map((item) => (
+                      <div
+                        key={item.id}
+                        className="p-4 border-b border-gray-50 last:border-b-0 hover:bg-gray-50"
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xl">{EMOTION_EMOJIS[item.emotion || ''] || '😐'}</span>
+                            <span className="font-medium text-gray-900 capitalize">{item.emotion}</span>
+                          </div>
+                          <span className="text-sm text-gray-500">
+                            {new Date(item.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                          </span>
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          Intensity: {item.intensity}/5
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -611,9 +817,14 @@ export default function MoodCheckInPage() {
             <p className="text-gray-600 mb-8 max-w-sm mx-auto">
               You've completed your mood check-in. Keep building that self-awareness!
             </p>
-            <Button onClick={() => router.push('/athlete')} className="px-8">
-              Back to Dashboard
-            </Button>
+            <div className="flex flex-col gap-3">
+              <Button onClick={() => window.location.reload()} className="px-8">
+                View Check-in History
+              </Button>
+              <Button variant="outline" onClick={() => router.push('/athlete')} className="px-8">
+                Back to Dashboard
+              </Button>
+            </div>
           </div>
         )}
       </div>

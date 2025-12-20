@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
-import { apiGet } from '@/lib/api'
+import { apiGet, apiDelete } from '@/lib/api'
 
 interface UserMembership {
   organization_id: string
@@ -204,7 +204,9 @@ function MetaScoresCard({ scores }: { scores: { thinking: number; feeling: numbe
   )
 }
 
-function AssessmentResults({ results }: { results: AssessmentResult }) {
+function AssessmentResults({ results, onRedo }: { results: AssessmentResult; onRedo: () => void }) {
+  const [showConfirm, setShowConfirm] = useState(false)
+
   return (
     <div className="space-y-6">
       {/* Meta Scores (Thinking, Feeling, Acting) */}
@@ -300,10 +302,47 @@ function AssessmentResults({ results }: { results: AssessmentResult }) {
         </div>
       </div>
 
-      {/* Assessment Info */}
-      <div className="text-center text-sm text-gray-500">
-        Assessment completed {new Date(results.completed_at).toLocaleDateString()}
+      {/* Assessment Info and Redo Button */}
+      <div className="flex items-center justify-between border-t border-gray-200 pt-4">
+        <span className="text-sm text-gray-500">
+          Assessment completed {new Date(results.completed_at).toLocaleDateString()}
+        </span>
+        <button
+          onClick={() => setShowConfirm(true)}
+          className="text-sm text-gray-500 hover:text-gray-700 underline"
+        >
+          Redo Assessment
+        </button>
       </div>
+
+      {/* Redo Confirmation Modal */}
+      {showConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Redo Assessment?</h3>
+            <p className="text-gray-600 mb-6">
+              This will clear your current assessment results. You&apos;ll need to complete the full assessment again to see new results.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowConfirm(false)}
+                className="flex-1 py-3 px-4 border border-gray-300 rounded-xl font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setShowConfirm(false)
+                  onRedo()
+                }}
+                className="flex-1 py-3 px-4 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700"
+              >
+                Redo Assessment
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -341,6 +380,23 @@ export default function ProfilePage() {
   const [isLoadingData, setIsLoadingData] = useState(true)
   const [assessmentStatus, setAssessmentStatus] = useState<AssessmentStatus | null>(null)
   const [results, setResults] = useState<AssessmentResult | null>(null)
+  const [isResetting, setIsResetting] = useState(false)
+
+  const handleRedoAssessment = async () => {
+    setIsResetting(true)
+    try {
+      await apiDelete('/assessments/me/reset')
+      // Clear local state and redirect to assessment
+      setAssessmentStatus({ has_completed: false, response_id: null, completed_at: null })
+      setResults(null)
+      router.push('/assessment')
+    } catch (err) {
+      console.error('Failed to reset assessment:', err)
+      alert('Failed to reset assessment. Please try again.')
+    } finally {
+      setIsResetting(false)
+    }
+  }
 
   useEffect(() => {
     const loadUserData = async () => {
@@ -410,7 +466,7 @@ export default function ProfilePage() {
       <div className="mb-8">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Assessment Results</h2>
         {hasCompletedAssessment && results ? (
-          <AssessmentResults results={results} />
+          <AssessmentResults results={results} onRedo={handleRedoAssessment} />
         ) : (
           <NoAssessment onStart={() => router.push('/assessment')} />
         )}

@@ -28,7 +28,7 @@ class TestListAssessments:
     ):
         """Authenticated user should be able to list assessments."""
         response = await client.get(
-            "/api/v1/assessments/",
+            "/api/v1/assessments",
             headers=auth_headers(athlete_token),
         )
 
@@ -40,7 +40,7 @@ class TestListAssessments:
     @pytest.mark.asyncio
     async def test_list_assessments_unauthenticated(self, client: AsyncClient):
         """Unauthenticated request should return 401."""
-        response = await client.get("/api/v1/assessments/")
+        response = await client.get("/api/v1/assessments")
 
         assert response.status_code == 401
 

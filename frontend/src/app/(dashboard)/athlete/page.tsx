@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
-import { apiGet } from '@/lib/api'
+import { apiGet, apiDelete } from '@/lib/api'
 
 interface UserMembership {
   organization_id: string
@@ -432,6 +432,26 @@ interface WeeklyActivityData {
   total_days: number
 }
 
+// === Check-in History Types ===
+interface CheckInHistoryItem {
+  id: string
+  check_in_type: string
+  emotion?: string
+  intensity?: number
+  confidence_level?: number
+  physical_energy?: number
+  mental_energy?: number
+  breathing_exercise_type?: string
+  created_at: string
+}
+
+interface CheckInHistoryData {
+  check_ins: CheckInHistoryItem[]
+  total: number
+  page: number
+  page_size: number
+}
+
 // === Weekly Activity Tracker ===
 function WeeklyActivityTracker() {
   const [activityData, setActivityData] = useState<WeeklyActivityData | null>(null)
@@ -516,6 +536,180 @@ function WeeklyActivityTracker() {
       <p className="text-xs text-gray-400 text-center mt-4">
         Complete a check-in, use a tool, or do a module to mark a day active
       </p>
+    </div>
+  )
+}
+
+// === Check-in History Component ===
+function CheckInHistory() {
+  const router = useRouter()
+  const [history, setHistory] = useState<CheckInHistoryData | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isExpanded, setIsExpanded] = useState(false)
+
+  useEffect(() => {
+    const loadHistory = async () => {
+      try {
+        const data = await apiGet<CheckInHistoryData>('/checkins/me?page=1&page_size=10')
+        setHistory(data)
+      } catch (err) {
+        console.error('Failed to load check-in history:', err)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    loadHistory()
+  }, [])
+
+  const getCheckInIcon = (type: string) => {
+    switch (type) {
+      case 'mood':
+        return (
+          <div className="w-8 h-8 rounded-full bg-pink-100 flex items-center justify-center">
+            <svg className="w-4 h-4 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+            </svg>
+          </div>
+        )
+      case 'confidence':
+        return (
+          <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center">
+            <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+            </svg>
+          </div>
+        )
+      case 'energy':
+        return (
+          <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
+            <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+          </div>
+        )
+      case 'breathing':
+        return (
+          <div className="w-8 h-8 rounded-full bg-cyan-100 flex items-center justify-center">
+            <svg className="w-4 h-4 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            </svg>
+          </div>
+        )
+      default:
+        return (
+          <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+            <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+        )
+    }
+  }
+
+  const getCheckInSummary = (item: CheckInHistoryItem) => {
+    switch (item.check_in_type) {
+      case 'mood':
+        return item.emotion ? `Feeling ${item.emotion}${item.intensity ? ` (${item.intensity}/7)` : ''}` : 'Mood check-in'
+      case 'confidence':
+        return item.confidence_level ? `Confidence level: ${item.confidence_level}/7` : 'Confidence check-in'
+      case 'energy':
+        return item.physical_energy && item.mental_energy
+          ? `Physical: ${item.physical_energy}/7, Mental: ${item.mental_energy}/7`
+          : 'Energy check-in'
+      case 'breathing':
+        return item.breathing_exercise_type
+          ? `${item.breathing_exercise_type.replace(/_/g, ' ')} exercise`
+          : 'Breathing exercise'
+      default:
+        return 'Check-in'
+    }
+  }
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr)
+    const today = new Date()
+    const yesterday = new Date(today)
+    yesterday.setDate(yesterday.getDate() - 1)
+
+    if (date.toDateString() === today.toDateString()) {
+      return `Today at ${date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`
+    } else if (date.toDateString() === yesterday.toDateString()) {
+      return `Yesterday at ${date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`
+    } else {
+      return date.toLocaleDateString([], { month: 'short', day: 'numeric' }) +
+        ` at ${date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+        <div className="animate-pulse">
+          <div className="h-5 w-32 bg-gray-200 rounded mb-4"></div>
+          <div className="space-y-3">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-gray-200 rounded-full"></div>
+                <div className="flex-1">
+                  <div className="h-4 w-24 bg-gray-200 rounded mb-1"></div>
+                  <div className="h-3 w-32 bg-gray-200 rounded"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!history || history.check_ins.length === 0) {
+    return (
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+        <h3 className="font-semibold text-gray-900 mb-3">Recent Check-ins</h3>
+        <p className="text-sm text-gray-500 text-center py-4">
+          No check-ins yet. Start your first check-in above!
+        </p>
+      </div>
+    )
+  }
+
+  const displayedCheckIns = isExpanded ? history.check_ins : history.check_ins.slice(0, 3)
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="font-semibold text-gray-900">Recent Check-ins</h3>
+        <span className="text-sm text-gray-500">{history.total} total</span>
+      </div>
+      <div className="space-y-3">
+        {displayedCheckIns.map((item) => (
+          <div
+            key={item.id}
+            className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            {getCheckInIcon(item.check_in_type)}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-900 capitalize">
+                {item.check_in_type.replace(/_/g, ' ')}
+              </p>
+              <p className="text-xs text-gray-500 truncate">
+                {getCheckInSummary(item)}
+              </p>
+            </div>
+            <span className="text-xs text-gray-400 whitespace-nowrap">
+              {formatDate(item.created_at)}
+            </span>
+          </div>
+        ))}
+      </div>
+      {history.total > 3 && (
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="w-full mt-3 py-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
+        >
+          {isExpanded ? 'Show less' : `Show ${Math.min(history.total - 3, 7)} more`}
+        </button>
+      )}
     </div>
   )
 }

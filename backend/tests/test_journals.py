@@ -20,7 +20,7 @@ class TestJournalConfig:
     ):
         """Should return all journal types and configuration."""
         response = await client.get(
-            "/api/v1/journals/config",
+            "/api/v1/journalsconfig",
             headers=auth_headers(athlete_token),
         )
 
@@ -62,7 +62,7 @@ class TestJournalConfig:
     @pytest.mark.asyncio
     async def test_journal_config_requires_auth(self, client: AsyncClient):
         """Should require authentication."""
-        response = await client.get("/api/v1/journals/config")
+        response = await client.get("/api/v1/journalsconfig")
         assert response.status_code == 401
 
 
@@ -78,7 +78,7 @@ class TestCreateJournalEntry:
     ):
         """Should create an affirmation journal entry successfully."""
         response = await client.post(
-            "/api/v1/journals/",
+            "/api/v1/journals",
             headers=auth_headers(athlete_token),
             json={
                 "organization_id": str(organization.id),
@@ -107,7 +107,7 @@ class TestCreateJournalEntry:
     ):
         """Should create a custom affirmation entry."""
         response = await client.post(
-            "/api/v1/journals/",
+            "/api/v1/journals",
             headers=auth_headers(athlete_token),
             json={
                 "organization_id": str(organization.id),
@@ -132,7 +132,7 @@ class TestCreateJournalEntry:
     ):
         """Should create a daily wins journal entry successfully."""
         response = await client.post(
-            "/api/v1/journals/",
+            "/api/v1/journals",
             headers=auth_headers(athlete_token),
             json={
                 "organization_id": str(organization.id),
@@ -159,7 +159,7 @@ class TestCreateJournalEntry:
     ):
         """Should create a gratitude journal entry successfully."""
         response = await client.post(
-            "/api/v1/journals/",
+            "/api/v1/journals",
             headers=auth_headers(athlete_token),
             json={
                 "organization_id": str(organization.id),
@@ -187,7 +187,7 @@ class TestCreateJournalEntry:
         """Should create an open-ended journal entry successfully."""
         content = "Today was a challenging day. I struggled with my serve but managed to stay focused throughout the match. I'm proud of how I handled the pressure."
         response = await client.post(
-            "/api/v1/journals/",
+            "/api/v1/journals",
             headers=auth_headers(athlete_token),
             json={
                 "organization_id": str(organization.id),
@@ -217,7 +217,7 @@ class TestCreateJournalEntry:
         """Should create an open-ended entry without a prompt."""
         content = "Just wanted to write down some thoughts about today's practice."
         response = await client.post(
-            "/api/v1/journals/",
+            "/api/v1/journals",
             headers=auth_headers(athlete_token),
             json={
                 "organization_id": str(organization.id),
@@ -241,7 +241,7 @@ class TestCreateJournalEntry:
     ):
         """Should reject invalid journal type."""
         response = await client.post(
-            "/api/v1/journals/",
+            "/api/v1/journals",
             headers=auth_headers(athlete_token),
             json={
                 "organization_id": str(organization.id),
@@ -272,7 +272,7 @@ class TestCreateJournalEntry:
         await db_session.commit()
 
         response = await client.post(
-            "/api/v1/journals/",
+            "/api/v1/journals",
             headers=auth_headers(athlete_token),
             json={
                 "organization_id": str(other_org.id),
@@ -289,7 +289,7 @@ class TestCreateJournalEntry:
     ):
         """Should require authentication."""
         response = await client.post(
-            "/api/v1/journals/",
+            "/api/v1/journals",
             json={
                 "organization_id": str(organization.id),
                 "journal_type": "gratitude",
@@ -312,7 +312,7 @@ class TestGetJournalEntries:
         """Should return user's journal entries."""
         # Create some entries first
         await client.post(
-            "/api/v1/journals/",
+            "/api/v1/journals",
             headers=auth_headers(athlete_token),
             json={
                 "organization_id": str(organization.id),
@@ -321,7 +321,7 @@ class TestGetJournalEntries:
             },
         )
         await client.post(
-            "/api/v1/journals/",
+            "/api/v1/journals",
             headers=auth_headers(athlete_token),
             json={
                 "organization_id": str(organization.id),
@@ -331,7 +331,7 @@ class TestGetJournalEntries:
         )
 
         response = await client.get(
-            "/api/v1/journals/me",
+            "/api/v1/journalsme",
             headers=auth_headers(athlete_token),
         )
 
@@ -353,7 +353,7 @@ class TestGetJournalEntries:
         """Should filter entries by journal type."""
         # Create entries of different types
         await client.post(
-            "/api/v1/journals/",
+            "/api/v1/journals",
             headers=auth_headers(athlete_token),
             json={
                 "organization_id": str(organization.id),
@@ -362,7 +362,7 @@ class TestGetJournalEntries:
             },
         )
         await client.post(
-            "/api/v1/journals/",
+            "/api/v1/journals",
             headers=auth_headers(athlete_token),
             json={
                 "organization_id": str(organization.id),
@@ -372,7 +372,7 @@ class TestGetJournalEntries:
         )
 
         response = await client.get(
-            "/api/v1/journals/me?journal_type=gratitude",
+            "/api/v1/journalsme?journal_type=gratitude",
             headers=auth_headers(athlete_token),
         )
 
@@ -392,7 +392,7 @@ class TestGetJournalEntries:
         """Should filter entries by tag."""
         # Create entries with different tags
         await client.post(
-            "/api/v1/journals/",
+            "/api/v1/journals",
             headers=auth_headers(athlete_token),
             json={
                 "organization_id": str(organization.id),
@@ -402,7 +402,7 @@ class TestGetJournalEntries:
             },
         )
         await client.post(
-            "/api/v1/journals/",
+            "/api/v1/journals",
             headers=auth_headers(athlete_token),
             json={
                 "organization_id": str(organization.id),
@@ -413,7 +413,7 @@ class TestGetJournalEntries:
         )
 
         response = await client.get(
-            "/api/v1/journals/me?tag=competition",
+            "/api/v1/journalsme?tag=competition",
             headers=auth_headers(athlete_token),
         )
 
@@ -435,7 +435,7 @@ class TestGetJournalEntries:
         # Create multiple entries
         for i in range(5):
             await client.post(
-                "/api/v1/journals/",
+                "/api/v1/journals",
                 headers=auth_headers(athlete_token),
                 json={
                     "organization_id": str(organization.id),
@@ -446,7 +446,7 @@ class TestGetJournalEntries:
 
         # Get first page
         response = await client.get(
-            "/api/v1/journals/me?limit=2&offset=0",
+            "/api/v1/journalsme?limit=2&offset=0",
             headers=auth_headers(athlete_token),
         )
 
@@ -459,7 +459,7 @@ class TestGetJournalEntries:
 
         # Get second page
         response = await client.get(
-            "/api/v1/journals/me?limit=2&offset=2",
+            "/api/v1/journalsme?limit=2&offset=2",
             headers=auth_headers(athlete_token),
         )
 
@@ -471,7 +471,7 @@ class TestGetJournalEntries:
     @pytest.mark.asyncio
     async def test_get_my_entries_requires_auth(self, client: AsyncClient):
         """Should require authentication."""
-        response = await client.get("/api/v1/journals/me")
+        response = await client.get("/api/v1/journalsme")
         assert response.status_code == 401
 
 
@@ -488,7 +488,7 @@ class TestGetJournalCalendar:
         """Should return calendar data for a month."""
         # Create an entry
         await client.post(
-            "/api/v1/journals/",
+            "/api/v1/journals",
             headers=auth_headers(athlete_token),
             json={
                 "organization_id": str(organization.id),
@@ -498,7 +498,7 @@ class TestGetJournalCalendar:
         )
 
         response = await client.get(
-            "/api/v1/journals/me/calendar?year=2025&month=12",
+            "/api/v1/journalsme/calendar?year=2025&month=12",
             headers=auth_headers(athlete_token),
         )
 
@@ -519,7 +519,7 @@ class TestGetJournalCalendar:
         """Should return correct structure for calendar entries."""
         # Create an entry
         await client.post(
-            "/api/v1/journals/",
+            "/api/v1/journals",
             headers=auth_headers(athlete_token),
             json={
                 "organization_id": str(organization.id),
@@ -532,7 +532,7 @@ class TestGetJournalCalendar:
         now = datetime.now()
 
         response = await client.get(
-            f"/api/v1/journals/me/calendar?year={now.year}&month={now.month}",
+            f"/api/v1/journalsme/calendar?year={now.year}&month={now.month}",
             headers=auth_headers(athlete_token),
         )
 
@@ -555,7 +555,7 @@ class TestGetJournalCalendar:
     ):
         """Should reject invalid month."""
         response = await client.get(
-            "/api/v1/journals/me/calendar?year=2025&month=13",
+            "/api/v1/journalsme/calendar?year=2025&month=13",
             headers=auth_headers(athlete_token),
         )
         assert response.status_code == 422
@@ -563,7 +563,7 @@ class TestGetJournalCalendar:
     @pytest.mark.asyncio
     async def test_get_calendar_requires_auth(self, client: AsyncClient):
         """Should require authentication."""
-        response = await client.get("/api/v1/journals/me/calendar?year=2025&month=12")
+        response = await client.get("/api/v1/journalsme/calendar?year=2025&month=12")
         assert response.status_code == 401
 
 
@@ -580,7 +580,7 @@ class TestGetJournalEntry:
         """Should return a specific journal entry."""
         # Create an entry
         create_response = await client.post(
-            "/api/v1/journals/",
+            "/api/v1/journals",
             headers=auth_headers(athlete_token),
             json={
                 "organization_id": str(organization.id),
@@ -593,7 +593,7 @@ class TestGetJournalEntry:
 
         # Get the entry
         response = await client.get(
-            f"/api/v1/journals/{entry_id}",
+            f"/api/v1/journals{entry_id}",
             headers=auth_headers(athlete_token),
         )
 
@@ -611,7 +611,7 @@ class TestGetJournalEntry:
     ):
         """Should return 404 for non-existent entry."""
         response = await client.get(
-            f"/api/v1/journals/{uuid.uuid4()}",
+            f"/api/v1/journals{uuid.uuid4()}",
             headers=auth_headers(athlete_token),
         )
         assert response.status_code == 404
@@ -627,7 +627,7 @@ class TestGetJournalEntry:
         """Should not return another user's entry."""
         # Create entry as athlete
         create_response = await client.post(
-            "/api/v1/journals/",
+            "/api/v1/journals",
             headers=auth_headers(athlete_token),
             json={
                 "organization_id": str(organization.id),
@@ -639,7 +639,7 @@ class TestGetJournalEntry:
 
         # Try to get it as admin (different user)
         response = await client.get(
-            f"/api/v1/journals/{entry_id}",
+            f"/api/v1/journals{entry_id}",
             headers=auth_headers(admin_token),
         )
         # Should return 404 (entry not found for that user)
@@ -650,7 +650,7 @@ class TestGetJournalEntry:
         self, client: AsyncClient
     ):
         """Should require authentication."""
-        response = await client.get(f"/api/v1/journals/{uuid.uuid4()}")
+        response = await client.get(f"/api/v1/journals{uuid.uuid4()}")
         assert response.status_code == 401
 
 
@@ -667,7 +667,7 @@ class TestUpdateJournalEntry:
         """Should update a journal entry successfully."""
         # Create an entry
         create_response = await client.post(
-            "/api/v1/journals/",
+            "/api/v1/journals",
             headers=auth_headers(athlete_token),
             json={
                 "organization_id": str(organization.id),
@@ -680,7 +680,7 @@ class TestUpdateJournalEntry:
 
         # Update the entry
         response = await client.put(
-            f"/api/v1/journals/{entry_id}",
+            f"/api/v1/journals{entry_id}",
             headers=auth_headers(athlete_token),
             json={
                 "gratitude_item": "Updated item",
@@ -703,7 +703,7 @@ class TestUpdateJournalEntry:
         """Should recalculate word count when content is updated."""
         # Create an entry
         create_response = await client.post(
-            "/api/v1/journals/",
+            "/api/v1/journals",
             headers=auth_headers(athlete_token),
             json={
                 "organization_id": str(organization.id),
@@ -717,7 +717,7 @@ class TestUpdateJournalEntry:
         # Update with longer content
         new_content = "This is a much longer piece of content that should have more words"
         response = await client.put(
-            f"/api/v1/journals/{entry_id}",
+            f"/api/v1/journals{entry_id}",
             headers=auth_headers(athlete_token),
             json={
                 "content": new_content,
@@ -737,7 +737,7 @@ class TestUpdateJournalEntry:
     ):
         """Should return 404 for non-existent entry."""
         response = await client.put(
-            f"/api/v1/journals/{uuid.uuid4()}",
+            f"/api/v1/journals{uuid.uuid4()}",
             headers=auth_headers(athlete_token),
             json={"gratitude_item": "Updated"},
         )
@@ -754,7 +754,7 @@ class TestUpdateJournalEntry:
         """Should not allow updating another user's entry."""
         # Create entry as athlete
         create_response = await client.post(
-            "/api/v1/journals/",
+            "/api/v1/journals",
             headers=auth_headers(athlete_token),
             json={
                 "organization_id": str(organization.id),
@@ -766,7 +766,7 @@ class TestUpdateJournalEntry:
 
         # Try to update as admin (different user)
         response = await client.put(
-            f"/api/v1/journals/{entry_id}",
+            f"/api/v1/journals{entry_id}",
             headers=auth_headers(admin_token),
             json={"gratitude_item": "Hacked"},
         )
@@ -778,7 +778,7 @@ class TestUpdateJournalEntry:
     ):
         """Should require authentication."""
         response = await client.put(
-            f"/api/v1/journals/{uuid.uuid4()}",
+            f"/api/v1/journals{uuid.uuid4()}",
             json={"gratitude_item": "Updated"},
         )
         assert response.status_code == 401
@@ -797,7 +797,7 @@ class TestDeleteJournalEntry:
         """Should delete a journal entry successfully."""
         # Create an entry
         create_response = await client.post(
-            "/api/v1/journals/",
+            "/api/v1/journals",
             headers=auth_headers(athlete_token),
             json={
                 "organization_id": str(organization.id),
@@ -809,7 +809,7 @@ class TestDeleteJournalEntry:
 
         # Delete the entry
         response = await client.delete(
-            f"/api/v1/journals/{entry_id}",
+            f"/api/v1/journals{entry_id}",
             headers=auth_headers(athlete_token),
         )
 
@@ -817,7 +817,7 @@ class TestDeleteJournalEntry:
 
         # Verify it's deleted
         get_response = await client.get(
-            f"/api/v1/journals/{entry_id}",
+            f"/api/v1/journals{entry_id}",
             headers=auth_headers(athlete_token),
         )
         assert get_response.status_code == 404
@@ -830,7 +830,7 @@ class TestDeleteJournalEntry:
     ):
         """Should return 404 for non-existent entry."""
         response = await client.delete(
-            f"/api/v1/journals/{uuid.uuid4()}",
+            f"/api/v1/journals{uuid.uuid4()}",
             headers=auth_headers(athlete_token),
         )
         assert response.status_code == 404
@@ -846,7 +846,7 @@ class TestDeleteJournalEntry:
         """Should not allow deleting another user's entry."""
         # Create entry as athlete
         create_response = await client.post(
-            "/api/v1/journals/",
+            "/api/v1/journals",
             headers=auth_headers(athlete_token),
             json={
                 "organization_id": str(organization.id),
@@ -858,14 +858,14 @@ class TestDeleteJournalEntry:
 
         # Try to delete as admin (different user)
         response = await client.delete(
-            f"/api/v1/journals/{entry_id}",
+            f"/api/v1/journals{entry_id}",
             headers=auth_headers(admin_token),
         )
         assert response.status_code == 404
 
         # Verify it still exists for the athlete
         get_response = await client.get(
-            f"/api/v1/journals/{entry_id}",
+            f"/api/v1/journals{entry_id}",
             headers=auth_headers(athlete_token),
         )
         assert get_response.status_code == 200
@@ -875,5 +875,5 @@ class TestDeleteJournalEntry:
         self, client: AsyncClient
     ):
         """Should require authentication."""
-        response = await client.delete(f"/api/v1/journals/{uuid.uuid4()}")
+        response = await client.delete(f"/api/v1/journals{uuid.uuid4()}")
         assert response.status_code == 401

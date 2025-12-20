@@ -35,12 +35,25 @@ interface FullUser {
   memberships: UserMembership[]
 }
 
-type Step = 'intro' | 'physical' | 'mental' | 'physical_factors' | 'mental_factors' | 'actions' | 'complete'
+interface CheckInHistoryItem {
+  id: string
+  check_in_type: string
+  physical_energy?: number
+  mental_energy?: number
+  created_at: string
+}
+
+interface CheckInHistoryData {
+  check_ins: CheckInHistoryItem[]
+  total: number
+}
+
+type Step = 'overview' | 'intro' | 'physical' | 'mental' | 'physical_factors' | 'mental_factors' | 'actions' | 'complete'
 
 export default function EnergyCheckInPage() {
   const router = useRouter()
   const { user, isLoading: authLoading } = useAuth()
-  const [step, setStep] = useState<Step>('intro')
+  const [step, setStep] = useState<Step>('overview')
   const [config, setConfig] = useState<EnergyConfig | null>(null)
   const [fullUser, setFullUser] = useState<FullUser | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -51,6 +64,8 @@ export default function EnergyCheckInPage() {
   const [selectedAction, setSelectedAction] = useState<string>('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [history, setHistory] = useState<CheckInHistoryData | null>(null)
+  const [showHistory, setShowHistory] = useState(false)
 
   // Fetch config and user data on mount
   useEffect(() => {
@@ -58,12 +73,16 @@ export default function EnergyCheckInPage() {
       if (!user) return
 
       try {
-        const [configData, userData] = await Promise.all([
+        const [configData, userData, historyData] = await Promise.all([
           apiGet<EnergyConfig>('/checkins/energy/config'),
           apiGet<FullUser>('/users/me/full'),
+          apiGet<{ check_ins: CheckInHistoryItem[]; total: number }>('/checkins/me?page=1&page_size=50'),
         ])
         setConfig(configData)
         setFullUser(userData)
+        // Filter to only energy check-ins
+        const energyCheckIns = historyData.check_ins.filter(c => c.check_in_type === 'energy')
+        setHistory({ check_ins: energyCheckIns, total: energyCheckIns.length })
       } catch (err) {
         console.error('Failed to load data:', err)
       } finally {
@@ -75,6 +94,27 @@ export default function EnergyCheckInPage() {
       loadData()
     }
   }, [user, authLoading])
+
+  // Helper to get calendar data for the current month
+  const getCalendarData = () => {
+    const today = new Date()
+    const year = today.getFullYear()
+    const month = today.getMonth()
+    const firstDay = new Date(year, month, 1)
+    const lastDay = new Date(year, month + 1, 0)
+    const daysInMonth = lastDay.getDate()
+    const startDayOfWeek = firstDay.getDay()
+
+    const checkInDates: Record<string, CheckInHistoryItem> = {}
+    history?.check_ins.forEach(c => {
+      const date = new Date(c.created_at).toDateString()
+      if (!checkInDates[date]) {
+        checkInDates[date] = c
+      }
+    })
+
+    return { year, month, daysInMonth, startDayOfWeek, checkInDates, today }
+  }
 
   const getEnergyState = (physical: number, mental: number): string => {
     const pLow = physical <= 3
@@ -155,7 +195,165 @@ export default function EnergyCheckInPage() {
     }
   }
 
-  if (authLoading || isLoading || !config) {
+  if (authLoading || isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-green-50 to-white">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+      </div>
+    )
+  }
+
+  // Step: Overview with Calendar
+  if (step === 'overview') {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-green-50 to-white">
+        <div className="max-w-lg mx-auto px-4 py-8">
+          <button
+            onClick={() => router.push('/athlete')}
+            className="flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-6"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Back to dashboard
+          </button>
+
+          <div className="text-center mb-6">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Energy Check-In</h1>
+            <p className="text-gray-600">Track your physical and mental energy over time</p>
+          </div>
+
+          <button
+            onClick={() => setStep('intro')}
+            className="w-full bg-green-600 text-white py-4 rounded-xl font-medium hover:bg-green-700 transition-colors mb-6"
+          >
+            Start New Check-In
+          </button>
+
+          {/* Calendar View */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+            <h3 className="font-semibold text-gray-900 mb-4">
+              {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+            </h3>
+
+            <div className="grid grid-cols-7 gap-1 mb-2">
+              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
+                <div key={i} className="text-center text-xs font-medium text-gray-500 py-1">
+                  {day}
+                </div>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-7 gap-1">
+              {(() => {
+                const { year, month, daysInMonth, startDayOfWeek, checkInDates, today } = getCalendarData()
+                const cells = []
+
+                for (let i = 0; i < startDayOfWeek; i++) {
+                  cells.push(<div key={`empty-${i}`} className="aspect-square" />)
+                }
+
+                for (let day = 1; day <= daysInMonth; day++) {
+                  const date = new Date(year, month, day)
+                  const dateStr = date.toDateString()
+                  const isToday = dateStr === today.toDateString()
+                  const checkIn = checkInDates[dateStr]
+                  const isPast = date < today && !isToday
+                  const isFuture = date > today
+
+                  cells.push(
+                    <div
+                      key={day}
+                      className={`aspect-square flex items-center justify-center rounded-full text-sm ${
+                        isToday ? 'ring-2 ring-green-500 ring-offset-1' : ''
+                      } ${
+                        checkIn
+                          ? 'bg-green-100 text-green-700 font-medium'
+                          : isPast
+                            ? 'text-gray-400'
+                            : isFuture
+                              ? 'text-gray-300'
+                              : 'text-gray-700'
+                      }`}
+                      title={checkIn ? `Physical: ${checkIn.physical_energy}/7, Mental: ${checkIn.mental_energy}/7` : ''}
+                    >
+                      {checkIn ? '⚡' : day}
+                    </div>
+                  )
+                }
+
+                return cells
+              })()}
+            </div>
+
+            <div className="flex items-center justify-center gap-4 mt-4 pt-4 border-t border-gray-100">
+              <div className="flex items-center gap-2 text-xs text-gray-500">
+                <div className="w-4 h-4 rounded-full bg-green-100"></div>
+                <span>Check-in completed</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-gray-500">
+                <div className="w-4 h-4 rounded-full ring-2 ring-green-500 ring-offset-1"></div>
+                <span>Today</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Expandable Check-in History */}
+          {history && history.check_ins.length > 0 && (
+            <div className="mt-4 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+              <button
+                onClick={() => setShowHistory(!showHistory)}
+                className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+              >
+                <span className="font-medium text-gray-900">
+                  Total check-ins: {history.total}
+                </span>
+                <svg
+                  className={`w-5 h-5 text-gray-400 transition-transform ${showHistory ? 'rotate-180' : ''}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {showHistory && (
+                <div className="border-t border-gray-100 max-h-64 overflow-y-auto">
+                  {history.check_ins.map((item) => (
+                    <div
+                      key={item.id}
+                      className="p-4 border-b border-gray-50 last:border-b-0 hover:bg-gray-50"
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xl">⚡</span>
+                          <span className="font-medium text-gray-900">Energy Check-in</span>
+                        </div>
+                        <span className="text-sm text-gray-500">
+                          {new Date(item.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                        </span>
+                      </div>
+                      <div className="text-sm text-gray-500 flex gap-4">
+                        <span>🏃 Physical: {item.physical_energy}/7</span>
+                        <span>🧠 Mental: {item.mental_energy}/7</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  if (!config) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-green-50 to-white">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
@@ -169,13 +367,13 @@ export default function EnergyCheckInPage() {
       <div className="min-h-screen bg-gradient-to-b from-green-50 to-white">
         <div className="max-w-lg mx-auto px-4 py-8">
           <button
-            onClick={() => router.push('/checkin')}
+            onClick={() => setStep('overview')}
             className="flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-6"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            Back to check-ins
+            Back
           </button>
 
           <div className="text-center">
@@ -699,16 +897,16 @@ export default function EnergyCheckInPage() {
 
             <div className="space-y-3">
               <button
-                onClick={() => router.push('/athlete')}
+                onClick={() => window.location.reload()}
                 className="w-full bg-green-600 text-white py-4 rounded-xl font-medium hover:bg-green-700 transition-colors"
               >
-                Back to Dashboard
+                View Check-in History
               </button>
               <button
-                onClick={() => router.push('/checkin')}
+                onClick={() => router.push('/athlete')}
                 className="w-full bg-white text-gray-700 py-4 rounded-xl font-medium border border-gray-200 hover:bg-gray-50 transition-colors"
               >
-                Do Another Check-In
+                Back to Dashboard
               </button>
             </div>
           </div>
