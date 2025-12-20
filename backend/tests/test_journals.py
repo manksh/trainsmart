@@ -20,7 +20,7 @@ class TestJournalConfig:
     ):
         """Should return all journal types and configuration."""
         response = await client.get(
-            "/api/v1/journalsconfig",
+            "/api/v1/journals/config",
             headers=auth_headers(athlete_token),
         )
 
@@ -62,7 +62,7 @@ class TestJournalConfig:
     @pytest.mark.asyncio
     async def test_journal_config_requires_auth(self, client: AsyncClient):
         """Should require authentication."""
-        response = await client.get("/api/v1/journalsconfig")
+        response = await client.get("/api/v1/journals/config")
         assert response.status_code == 401
 
 
@@ -331,7 +331,7 @@ class TestGetJournalEntries:
         )
 
         response = await client.get(
-            "/api/v1/journalsme",
+            "/api/v1/journals/me",
             headers=auth_headers(athlete_token),
         )
 
@@ -372,7 +372,7 @@ class TestGetJournalEntries:
         )
 
         response = await client.get(
-            "/api/v1/journalsme?journal_type=gratitude",
+            "/api/v1/journals/me?journal_type=gratitude",
             headers=auth_headers(athlete_token),
         )
 
@@ -413,7 +413,7 @@ class TestGetJournalEntries:
         )
 
         response = await client.get(
-            "/api/v1/journalsme?tag=competition",
+            "/api/v1/journals/me?tag=competition",
             headers=auth_headers(athlete_token),
         )
 
@@ -446,7 +446,7 @@ class TestGetJournalEntries:
 
         # Get first page
         response = await client.get(
-            "/api/v1/journalsme?limit=2&offset=0",
+            "/api/v1/journals/me?limit=2&offset=0",
             headers=auth_headers(athlete_token),
         )
 
@@ -459,7 +459,7 @@ class TestGetJournalEntries:
 
         # Get second page
         response = await client.get(
-            "/api/v1/journalsme?limit=2&offset=2",
+            "/api/v1/journals/me?limit=2&offset=2",
             headers=auth_headers(athlete_token),
         )
 
@@ -471,7 +471,7 @@ class TestGetJournalEntries:
     @pytest.mark.asyncio
     async def test_get_my_entries_requires_auth(self, client: AsyncClient):
         """Should require authentication."""
-        response = await client.get("/api/v1/journalsme")
+        response = await client.get("/api/v1/journals/me")
         assert response.status_code == 401
 
 
@@ -498,7 +498,7 @@ class TestGetJournalCalendar:
         )
 
         response = await client.get(
-            "/api/v1/journalsme/calendar?year=2025&month=12",
+            "/api/v1/journals/me/calendar?year=2025&month=12",
             headers=auth_headers(athlete_token),
         )
 
@@ -532,7 +532,7 @@ class TestGetJournalCalendar:
         now = datetime.now()
 
         response = await client.get(
-            f"/api/v1/journalsme/calendar?year={now.year}&month={now.month}",
+            f"/api/v1/journals/me/calendar?year={now.year}&month={now.month}",
             headers=auth_headers(athlete_token),
         )
 
@@ -555,7 +555,7 @@ class TestGetJournalCalendar:
     ):
         """Should reject invalid month."""
         response = await client.get(
-            "/api/v1/journalsme/calendar?year=2025&month=13",
+            "/api/v1/journals/me/calendar?year=2025&month=13",
             headers=auth_headers(athlete_token),
         )
         assert response.status_code == 422
@@ -563,7 +563,7 @@ class TestGetJournalCalendar:
     @pytest.mark.asyncio
     async def test_get_calendar_requires_auth(self, client: AsyncClient):
         """Should require authentication."""
-        response = await client.get("/api/v1/journalsme/calendar?year=2025&month=12")
+        response = await client.get("/api/v1/journals/me/calendar?year=2025&month=12")
         assert response.status_code == 401
 
 
@@ -593,7 +593,7 @@ class TestGetJournalEntry:
 
         # Get the entry
         response = await client.get(
-            f"/api/v1/journals{entry_id}",
+            f"/api/v1/journals/{entry_id}",
             headers=auth_headers(athlete_token),
         )
 
@@ -611,7 +611,7 @@ class TestGetJournalEntry:
     ):
         """Should return 404 for non-existent entry."""
         response = await client.get(
-            f"/api/v1/journals{uuid.uuid4()}",
+            f"/api/v1/journals/{uuid.uuid4()}",
             headers=auth_headers(athlete_token),
         )
         assert response.status_code == 404
@@ -639,7 +639,7 @@ class TestGetJournalEntry:
 
         # Try to get it as admin (different user)
         response = await client.get(
-            f"/api/v1/journals{entry_id}",
+            f"/api/v1/journals/{entry_id}",
             headers=auth_headers(admin_token),
         )
         # Should return 404 (entry not found for that user)
@@ -650,7 +650,7 @@ class TestGetJournalEntry:
         self, client: AsyncClient
     ):
         """Should require authentication."""
-        response = await client.get(f"/api/v1/journals{uuid.uuid4()}")
+        response = await client.get(f"/api/v1/journals/{uuid.uuid4()}")
         assert response.status_code == 401
 
 
@@ -680,7 +680,7 @@ class TestUpdateJournalEntry:
 
         # Update the entry
         response = await client.put(
-            f"/api/v1/journals{entry_id}",
+            f"/api/v1/journals/{entry_id}",
             headers=auth_headers(athlete_token),
             json={
                 "gratitude_item": "Updated item",
@@ -717,7 +717,7 @@ class TestUpdateJournalEntry:
         # Update with longer content
         new_content = "This is a much longer piece of content that should have more words"
         response = await client.put(
-            f"/api/v1/journals{entry_id}",
+            f"/api/v1/journals/{entry_id}",
             headers=auth_headers(athlete_token),
             json={
                 "content": new_content,
@@ -737,7 +737,7 @@ class TestUpdateJournalEntry:
     ):
         """Should return 404 for non-existent entry."""
         response = await client.put(
-            f"/api/v1/journals{uuid.uuid4()}",
+            f"/api/v1/journals/{uuid.uuid4()}",
             headers=auth_headers(athlete_token),
             json={"gratitude_item": "Updated"},
         )
@@ -766,7 +766,7 @@ class TestUpdateJournalEntry:
 
         # Try to update as admin (different user)
         response = await client.put(
-            f"/api/v1/journals{entry_id}",
+            f"/api/v1/journals/{entry_id}",
             headers=auth_headers(admin_token),
             json={"gratitude_item": "Hacked"},
         )
@@ -778,7 +778,7 @@ class TestUpdateJournalEntry:
     ):
         """Should require authentication."""
         response = await client.put(
-            f"/api/v1/journals{uuid.uuid4()}",
+            f"/api/v1/journals/{uuid.uuid4()}",
             json={"gratitude_item": "Updated"},
         )
         assert response.status_code == 401
@@ -809,7 +809,7 @@ class TestDeleteJournalEntry:
 
         # Delete the entry
         response = await client.delete(
-            f"/api/v1/journals{entry_id}",
+            f"/api/v1/journals/{entry_id}",
             headers=auth_headers(athlete_token),
         )
 
@@ -817,7 +817,7 @@ class TestDeleteJournalEntry:
 
         # Verify it's deleted
         get_response = await client.get(
-            f"/api/v1/journals{entry_id}",
+            f"/api/v1/journals/{entry_id}",
             headers=auth_headers(athlete_token),
         )
         assert get_response.status_code == 404
@@ -830,7 +830,7 @@ class TestDeleteJournalEntry:
     ):
         """Should return 404 for non-existent entry."""
         response = await client.delete(
-            f"/api/v1/journals{uuid.uuid4()}",
+            f"/api/v1/journals/{uuid.uuid4()}",
             headers=auth_headers(athlete_token),
         )
         assert response.status_code == 404
@@ -858,14 +858,14 @@ class TestDeleteJournalEntry:
 
         # Try to delete as admin (different user)
         response = await client.delete(
-            f"/api/v1/journals{entry_id}",
+            f"/api/v1/journals/{entry_id}",
             headers=auth_headers(admin_token),
         )
         assert response.status_code == 404
 
         # Verify it still exists for the athlete
         get_response = await client.get(
-            f"/api/v1/journals{entry_id}",
+            f"/api/v1/journals/{entry_id}",
             headers=auth_headers(athlete_token),
         )
         assert get_response.status_code == 200
@@ -875,5 +875,5 @@ class TestDeleteJournalEntry:
         self, client: AsyncClient
     ):
         """Should require authentication."""
-        response = await client.delete(f"/api/v1/journals{uuid.uuid4()}")
+        response = await client.delete(f"/api/v1/journals/{uuid.uuid4()}")
         assert response.status_code == 401
