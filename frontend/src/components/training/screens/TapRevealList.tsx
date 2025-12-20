@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { TapRevealListContent, ScreenComponentProps } from '../types'
+import { getModuleColors } from '@/lib/colors'
 
 interface TapRevealListProps extends ScreenComponentProps {
   content: TapRevealListContent
@@ -18,14 +19,18 @@ export default function TapRevealList({
     savedResponse?.revealed_items || []
   )
 
-  const colorClasses: Record<string, { bg: string; bgLight: string; text: string; gradient: string }> = {
-    emerald: { bg: 'bg-emerald-600', bgLight: 'bg-emerald-50', text: 'text-emerald-600', gradient: 'from-emerald-500 to-emerald-600' },
-    purple: { bg: 'bg-purple-600', bgLight: 'bg-purple-50', text: 'text-purple-600', gradient: 'from-purple-500 to-purple-600' },
-    blue: { bg: 'bg-blue-600', bgLight: 'bg-blue-50', text: 'text-blue-600', gradient: 'from-blue-500 to-blue-600' },
-    amber: { bg: 'bg-amber-600', bgLight: 'bg-amber-50', text: 'text-amber-600', gradient: 'from-amber-500 to-amber-600' },
-  }
+  const colors = getModuleColors(moduleColor)
 
-  const colors = colorClasses[moduleColor] || colorClasses.purple
+  // TapRevealList uses a specific gradient format for the reveal button
+  const gradientClasses: Record<string, string> = {
+    emerald: 'from-emerald-500 to-emerald-600',
+    purple: 'from-purple-500 to-purple-600',
+    blue: 'from-blue-500 to-blue-600',
+    amber: 'from-amber-500 to-amber-600',
+    rose: 'from-rose-500 to-rose-600',
+    cyan: 'from-cyan-500 to-cyan-600',
+  }
+  const buttonGradient = gradientClasses[moduleColor] || gradientClasses.purple
 
   useEffect(() => {
     if (savedResponse?.revealed_items) {
@@ -84,7 +89,7 @@ export default function TapRevealList({
                 ) : isNext ? (
                   <button
                     onClick={handleRevealNext}
-                    className={`w-full bg-gradient-to-r ${colors.gradient} rounded-xl p-4 text-white font-medium flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.98] transition-all`}
+                    className={`w-full bg-gradient-to-r ${buttonGradient} rounded-xl p-4 text-white font-medium flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.98] transition-all`}
                   >
                     <svg
                       className="w-5 h-5"

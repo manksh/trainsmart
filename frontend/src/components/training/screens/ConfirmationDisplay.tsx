@@ -1,6 +1,7 @@
 'use client'
 
 import { ConfirmationDisplayContent, ScreenComponentProps, ScreenResponse } from '../types'
+import { getModuleColors } from '@/lib/colors'
 
 interface ConfirmationDisplayProps extends ScreenComponentProps {
   content: ConfirmationDisplayContent
@@ -13,14 +14,18 @@ export default function ConfirmationDisplay({
   moduleColor,
   allScreenResponses,
 }: ConfirmationDisplayProps) {
-  const colorClasses: Record<string, { bg: string; bgLight: string; text: string; border: string }> = {
-    emerald: { bg: 'bg-emerald-600', bgLight: 'bg-emerald-50', text: 'text-emerald-600', border: 'border-emerald-200' },
-    purple: { bg: 'bg-purple-600', bgLight: 'bg-purple-50', text: 'text-purple-600', border: 'border-purple-200' },
-    blue: { bg: 'bg-blue-600', bgLight: 'bg-blue-50', text: 'text-blue-600', border: 'border-blue-200' },
-    amber: { bg: 'bg-amber-600', bgLight: 'bg-amber-50', text: 'text-amber-600', border: 'border-amber-200' },
-  }
+  const colors = getModuleColors(moduleColor)
 
-  const colors = colorClasses[moduleColor] || colorClasses.purple
+  // Border color mapping for confirmation items
+  const borderClasses: Record<string, string> = {
+    emerald: 'border-emerald-200',
+    purple: 'border-purple-200',
+    blue: 'border-blue-200',
+    amber: 'border-amber-200',
+    rose: 'border-rose-200',
+    cyan: 'border-cyan-200',
+  }
+  const itemBorder = borderClasses[moduleColor] || borderClasses.purple
 
   // Collect text inputs from the specified screens
   const displayItems: string[] = []
@@ -43,7 +48,7 @@ export default function ConfirmationDisplay({
             displayItems.map((item, index) => (
               <div
                 key={index}
-                className={`${colors.bgLight} ${colors.border} border-2 rounded-xl p-4`}
+                className={`${colors.bgLight} ${itemBorder} border-2 rounded-xl p-4`}
               >
                 <p className={`${colors.text} font-medium text-lg`}>{item}</p>
               </div>

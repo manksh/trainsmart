@@ -213,6 +213,48 @@ class ModuleProgressOut(BaseModel):
     class Config:
         from_attributes = True
 
+    @classmethod
+    def from_progress(
+        cls,
+        progress: Any,  # ModuleProgress model - using Any to avoid circular import
+        module_slug: str,
+        progress_percentage: int = 0,
+    ) -> "ModuleProgressOut":
+        """
+        Create a ModuleProgressOut from a ModuleProgress model instance.
+
+        This factory method reduces boilerplate when converting ModuleProgress
+        database models to response schemas. The progress_percentage must be
+        calculated separately since it requires access to the module content.
+
+        Args:
+            progress: ModuleProgress model instance
+            module_slug: The slug of the associated training module
+            progress_percentage: Pre-calculated progress percentage (0-100)
+
+        Returns:
+            ModuleProgressOut instance ready for API response
+        """
+        return cls(
+            id=progress.id,
+            user_id=progress.user_id,
+            organization_id=progress.organization_id,
+            module_id=progress.module_id,
+            module_slug=module_slug,
+            progress_data=progress.progress_data or {},
+            current_section=progress.current_section,
+            current_step=progress.current_step,
+            is_started=progress.is_started,
+            is_completed=progress.is_completed,
+            completed_at=progress.completed_at,
+            activity_responses=progress.activity_responses or {},
+            personal_selections=progress.personal_selections or {},
+            total_time_seconds=progress.total_time_seconds or 0,
+            progress_percentage=progress_percentage,
+            created_at=progress.created_at,
+            updated_at=progress.updated_at,
+        )
+
 
 # === Status Schemas ===
 

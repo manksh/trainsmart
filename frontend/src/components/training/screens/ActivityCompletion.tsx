@@ -1,6 +1,7 @@
 'use client'
 
 import { ScreenComponentProps } from '../types'
+import { getModuleColors } from '@/lib/colors'
 
 interface ActivityCompletionContent {
   title: string
@@ -17,34 +18,7 @@ export default function ActivityCompletion({
   onContinue,
   moduleColor,
 }: ActivityCompletionProps) {
-  const colorClasses: Record<string, { bg: string; bgLight: string; text: string; gradient: string }> = {
-    emerald: {
-      bg: 'bg-emerald-600',
-      bgLight: 'bg-emerald-50',
-      text: 'text-emerald-600',
-      gradient: 'from-emerald-50 to-white',
-    },
-    purple: {
-      bg: 'bg-purple-600',
-      bgLight: 'bg-purple-50',
-      text: 'text-purple-600',
-      gradient: 'from-purple-50 to-white',
-    },
-    blue: {
-      bg: 'bg-blue-600',
-      bgLight: 'bg-blue-50',
-      text: 'text-blue-600',
-      gradient: 'from-blue-50 to-white',
-    },
-    amber: {
-      bg: 'bg-amber-600',
-      bgLight: 'bg-amber-50',
-      text: 'text-amber-600',
-      gradient: 'from-amber-50 to-white',
-    },
-  }
-
-  const colors = colorClasses[moduleColor] || colorClasses.purple
+  const colors = getModuleColors(moduleColor)
 
   return (
     <div className={`flex flex-col min-h-[calc(100vh-180px)] bg-gradient-to-b ${colors.gradient}`}>

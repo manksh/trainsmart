@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { TapRevealColumnsContent, ScreenComponentProps, ScreenResponse } from '../types'
+import { getModuleColors } from '@/lib/colors'
 
 interface TapRevealColumnsProps extends ScreenComponentProps {
   content: TapRevealColumnsContent
@@ -18,34 +19,7 @@ export default function TapRevealColumns({
     new Set(savedResponse?.revealed_items || [])
   )
 
-  const colorClasses: Record<string, { bg: string; bgLight: string; text: string; border: string }> = {
-    emerald: {
-      bg: 'bg-emerald-600',
-      bgLight: 'bg-emerald-50',
-      text: 'text-emerald-600',
-      border: 'border-emerald-200',
-    },
-    purple: {
-      bg: 'bg-purple-600',
-      bgLight: 'bg-purple-50',
-      text: 'text-purple-600',
-      border: 'border-purple-200',
-    },
-    blue: {
-      bg: 'bg-blue-600',
-      bgLight: 'bg-blue-50',
-      text: 'text-blue-600',
-      border: 'border-blue-200',
-    },
-    amber: {
-      bg: 'bg-amber-600',
-      bgLight: 'bg-amber-50',
-      text: 'text-amber-600',
-      border: 'border-amber-200',
-    },
-  }
-
-  const colors = colorClasses[moduleColor] || colorClasses.purple
+  const colors = getModuleColors(moduleColor)
 
   useEffect(() => {
     if (savedResponse?.revealed_items) {

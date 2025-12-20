@@ -1,6 +1,7 @@
 'use client'
 
 import { FullScreenStatementContent, ScreenComponentProps } from '../types'
+import { getModuleColors } from '@/lib/colors'
 
 interface FullScreenStatementProps extends ScreenComponentProps {
   content: FullScreenStatementContent
@@ -11,30 +12,7 @@ export default function FullScreenStatement({
   onContinue,
   moduleColor,
 }: FullScreenStatementProps) {
-  const colorClasses: Record<string, { bg: string; gradient: string; text: string }> = {
-    emerald: {
-      bg: 'bg-emerald-600',
-      gradient: 'from-emerald-50 to-white',
-      text: 'text-emerald-600',
-    },
-    purple: {
-      bg: 'bg-purple-600',
-      gradient: 'from-purple-50 to-white',
-      text: 'text-purple-600',
-    },
-    blue: {
-      bg: 'bg-blue-600',
-      gradient: 'from-blue-50 to-white',
-      text: 'text-blue-600',
-    },
-    amber: {
-      bg: 'bg-amber-600',
-      gradient: 'from-amber-50 to-white',
-      text: 'text-amber-600',
-    },
-  }
-
-  const colors = colorClasses[moduleColor] || colorClasses.purple
+  const colors = getModuleColors(moduleColor)
 
   const isReassurance = content.style === 'reassurance'
 

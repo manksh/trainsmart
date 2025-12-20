@@ -1,20 +1,25 @@
 'use client'
 
 import { StaticCardContent, ScreenComponentProps } from '../types'
+import { getModuleColors } from '@/lib/colors'
 
 interface StaticCardProps extends ScreenComponentProps {
   content: StaticCardContent
 }
 
 export default function StaticCard({ content, onContinue, moduleColor }: StaticCardProps) {
-  const colorClasses: Record<string, { bg: string; bgLight: string; text: string }> = {
-    emerald: { bg: 'bg-emerald-600', bgLight: 'bg-emerald-50', text: 'text-emerald-600' },
-    purple: { bg: 'bg-purple-600', bgLight: 'bg-purple-50', text: 'text-purple-600' },
-    blue: { bg: 'bg-blue-600', bgLight: 'bg-blue-50', text: 'text-blue-600' },
-    amber: { bg: 'bg-amber-600', bgLight: 'bg-amber-50', text: 'text-amber-600' },
-  }
+  const colors = getModuleColors(moduleColor)
 
-  const colors = colorClasses[moduleColor] || colorClasses.purple
+  // Border color mapping for emphasis mode
+  const borderClasses: Record<string, string> = {
+    emerald: 'border-emerald-200',
+    purple: 'border-purple-200',
+    blue: 'border-blue-200',
+    amber: 'border-amber-200',
+    rose: 'border-rose-200',
+    cyan: 'border-cyan-200',
+  }
+  const emphasisBorder = borderClasses[moduleColor] || borderClasses.purple
 
   return (
     <div className="flex flex-col min-h-[calc(100vh-180px)] px-4 py-8">
@@ -22,7 +27,7 @@ export default function StaticCard({ content, onContinue, moduleColor }: StaticC
         <div
           className={`rounded-2xl p-6 space-y-4 ${
             content.emphasis
-              ? `${colors.bgLight} border-2 border-${moduleColor}-200`
+              ? `${colors.bgLight} border-2 ${emphasisBorder}`
               : 'bg-white shadow-sm border border-gray-100'
           }`}
         >

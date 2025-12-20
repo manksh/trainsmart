@@ -308,24 +308,10 @@ async def start_module(
 
     if existing:
         # Return existing progress instead of error
-        return ModuleProgressOut(
-            id=existing.id,
-            user_id=existing.user_id,
-            organization_id=existing.organization_id,
-            module_id=existing.module_id,
-            module_slug=module.slug,
-            progress_data=existing.progress_data,
-            current_section=existing.current_section,
-            current_step=existing.current_step,
-            is_started=existing.is_started,
-            is_completed=existing.is_completed,
-            completed_at=existing.completed_at,
-            activity_responses=existing.activity_responses,
-            personal_selections=existing.personal_selections,
-            total_time_seconds=existing.total_time_seconds,
-            progress_percentage=calculate_progress_percentage(existing, module),
-            created_at=existing.created_at,
-            updated_at=existing.updated_at,
+        return ModuleProgressOut.from_progress(
+            existing,
+            module.slug,
+            calculate_progress_percentage(existing, module),
         )
 
     # Initialize progress_data based on module flow type
@@ -363,24 +349,10 @@ async def start_module(
     await db.commit()
     await db.refresh(progress)
 
-    return ModuleProgressOut(
-        id=progress.id,
-        user_id=progress.user_id,
-        organization_id=progress.organization_id,
-        module_id=progress.module_id,
-        module_slug=module.slug,
-        progress_data=progress.progress_data,
-        current_section=progress.current_section,
-        current_step=progress.current_step,
-        is_started=progress.is_started,
-        is_completed=progress.is_completed,
-        completed_at=progress.completed_at,
-        activity_responses=progress.activity_responses,
-        personal_selections=progress.personal_selections,
-        total_time_seconds=progress.total_time_seconds,
-        progress_percentage=calculate_progress_percentage(progress, module),
-        created_at=progress.created_at,
-        updated_at=progress.updated_at,
+    return ModuleProgressOut.from_progress(
+        progress,
+        module.slug,
+        calculate_progress_percentage(progress, module),
     )
 
 
@@ -415,24 +387,10 @@ async def get_my_module_progress(
     if not progress:
         return None
 
-    return ModuleProgressOut(
-        id=progress.id,
-        user_id=progress.user_id,
-        organization_id=progress.organization_id,
-        module_id=progress.module_id,
-        module_slug=module.slug,
-        progress_data=progress.progress_data,
-        current_section=progress.current_section,
-        current_step=progress.current_step,
-        is_started=progress.is_started,
-        is_completed=progress.is_completed,
-        completed_at=progress.completed_at,
-        activity_responses=progress.activity_responses,
-        personal_selections=progress.personal_selections,
-        total_time_seconds=progress.total_time_seconds,
-        progress_percentage=calculate_progress_percentage(progress, module),
-        created_at=progress.created_at,
-        updated_at=progress.updated_at,
+    return ModuleProgressOut.from_progress(
+        progress,
+        module.slug,
+        calculate_progress_percentage(progress, module),
     )
 
 
@@ -537,24 +495,10 @@ async def update_module_progress(
     await db.commit()
     await db.refresh(progress)
 
-    return ModuleProgressOut(
-        id=progress.id,
-        user_id=progress.user_id,
-        organization_id=progress.organization_id,
-        module_id=progress.module_id,
-        module_slug=module.slug if module else "",
-        progress_data=progress.progress_data,
-        current_section=progress.current_section,
-        current_step=progress.current_step,
-        is_started=progress.is_started,
-        is_completed=progress.is_completed,
-        completed_at=progress.completed_at,
-        activity_responses=progress.activity_responses,
-        personal_selections=progress.personal_selections,
-        total_time_seconds=progress.total_time_seconds,
-        progress_percentage=calculate_progress_percentage(progress, module) if module else 0,
-        created_at=progress.created_at,
-        updated_at=progress.updated_at,
+    return ModuleProgressOut.from_progress(
+        progress,
+        module.slug if module else "",
+        calculate_progress_percentage(progress, module) if module else 0,
     )
 
 
@@ -595,22 +539,8 @@ async def complete_module(
     await db.commit()
     await db.refresh(progress)
 
-    return ModuleProgressOut(
-        id=progress.id,
-        user_id=progress.user_id,
-        organization_id=progress.organization_id,
-        module_id=progress.module_id,
-        module_slug=module.slug if module else "",
-        progress_data=progress.progress_data,
-        current_section=progress.current_section,
-        current_step=progress.current_step,
-        is_started=progress.is_started,
-        is_completed=progress.is_completed,
-        completed_at=progress.completed_at,
-        activity_responses=progress.activity_responses,
-        personal_selections=progress.personal_selections,
-        total_time_seconds=progress.total_time_seconds,
-        progress_percentage=calculate_progress_percentage(progress, module) if module else 100,
-        created_at=progress.created_at,
-        updated_at=progress.updated_at,
+    return ModuleProgressOut.from_progress(
+        progress,
+        module.slug if module else "",
+        calculate_progress_percentage(progress, module) if module else 100,
     )

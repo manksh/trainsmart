@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { CategoryToggleContent, ScreenComponentProps } from '../types'
+import { getModuleColors } from '@/lib/colors'
 
 interface CategoryToggleProps extends ScreenComponentProps {
   content: CategoryToggleContent
@@ -19,14 +20,7 @@ export default function CategoryToggle({
   )
   const [showFeedback, setShowFeedback] = useState(false)
 
-  const colorClasses: Record<string, { bg: string; bgLight: string; text: string; border: string }> = {
-    emerald: { bg: 'bg-emerald-600', bgLight: 'bg-emerald-50', text: 'text-emerald-600', border: 'border-emerald-500' },
-    purple: { bg: 'bg-purple-600', bgLight: 'bg-purple-50', text: 'text-purple-600', border: 'border-purple-500' },
-    blue: { bg: 'bg-blue-600', bgLight: 'bg-blue-50', text: 'text-blue-600', border: 'border-blue-500' },
-    amber: { bg: 'bg-amber-600', bgLight: 'bg-amber-50', text: 'text-amber-600', border: 'border-amber-500' },
-  }
-
-  const colors = colorClasses[moduleColor] || colorClasses.purple
+  const colors = getModuleColors(moduleColor)
 
   // Category-specific colors
   const categoryColors: Record<string, { bg: string; bgLight: string; text: string; border: string }> = {

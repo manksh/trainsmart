@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { SwipeCardContent, ScreenComponentProps } from '../types'
+import { getModuleColors } from '@/lib/colors'
 
 interface SwipeCardProps extends ScreenComponentProps {
   content: SwipeCardContent
@@ -10,14 +11,18 @@ interface SwipeCardProps extends ScreenComponentProps {
 export default function SwipeCard({ content, onContinue, moduleColor }: SwipeCardProps) {
   const [isFlipped, setIsFlipped] = useState(false)
 
-  const colorClasses: Record<string, { bg: string; bgLight: string; text: string; gradient: string }> = {
-    emerald: { bg: 'bg-emerald-600', bgLight: 'bg-emerald-50', text: 'text-emerald-600', gradient: 'from-emerald-500 to-emerald-600' },
-    purple: { bg: 'bg-purple-600', bgLight: 'bg-purple-50', text: 'text-purple-600', gradient: 'from-purple-500 to-purple-600' },
-    blue: { bg: 'bg-blue-600', bgLight: 'bg-blue-50', text: 'text-blue-600', gradient: 'from-blue-500 to-blue-600' },
-    amber: { bg: 'bg-amber-600', bgLight: 'bg-amber-50', text: 'text-amber-600', gradient: 'from-amber-500 to-amber-600' },
-  }
+  const colors = getModuleColors(moduleColor)
 
-  const colors = colorClasses[moduleColor] || colorClasses.purple
+  // SwipeCard uses a specific gradient format for the flip card
+  const gradientClasses: Record<string, string> = {
+    emerald: 'from-emerald-500 to-emerald-600',
+    purple: 'from-purple-500 to-purple-600',
+    blue: 'from-blue-500 to-blue-600',
+    amber: 'from-amber-500 to-amber-600',
+    rose: 'from-rose-500 to-rose-600',
+    cyan: 'from-cyan-500 to-cyan-600',
+  }
+  const buttonGradient = gradientClasses[moduleColor] || gradientClasses.purple
 
   const handleFlip = () => {
     if (!isFlipped) {
@@ -63,7 +68,7 @@ export default function SwipeCard({ content, onContinue, moduleColor }: SwipeCar
             >
               {/* Front of card - Tap to reveal */}
               <div
-                className={`flip-card-front absolute inset-0 w-full h-full rounded-2xl p-6 bg-gradient-to-br ${colors.gradient} shadow-lg flex items-center justify-center`}
+                className={`flip-card-front absolute inset-0 w-full h-full rounded-2xl p-6 bg-gradient-to-br ${buttonGradient} shadow-lg flex items-center justify-center`}
                 style={{
                   backfaceVisibility: 'hidden',
                   WebkitBackfaceVisibility: 'hidden',

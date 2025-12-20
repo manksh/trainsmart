@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { MicroCommitmentContent, ScreenComponentProps, ScreenResponse } from '../types'
+import { getModuleColors } from '@/lib/colors'
 
 interface MicroCommitmentProps extends ScreenComponentProps {
   content: MicroCommitmentContent
@@ -22,42 +23,7 @@ export default function MicroCommitment({
   )
   const [showConfirmation, setShowConfirmation] = useState(false)
 
-  const colorClasses: Record<string, { bg: string; bgLight: string; text: string; border: string; ring: string; gradient: string }> = {
-    emerald: {
-      bg: 'bg-emerald-600',
-      bgLight: 'bg-emerald-50',
-      text: 'text-emerald-600',
-      border: 'border-emerald-500',
-      ring: 'ring-emerald-500',
-      gradient: 'from-emerald-50 to-white',
-    },
-    purple: {
-      bg: 'bg-purple-600',
-      bgLight: 'bg-purple-50',
-      text: 'text-purple-600',
-      border: 'border-purple-500',
-      ring: 'ring-purple-500',
-      gradient: 'from-purple-50 to-white',
-    },
-    blue: {
-      bg: 'bg-blue-600',
-      bgLight: 'bg-blue-50',
-      text: 'text-blue-600',
-      border: 'border-blue-500',
-      ring: 'ring-blue-500',
-      gradient: 'from-blue-50 to-white',
-    },
-    amber: {
-      bg: 'bg-amber-600',
-      bgLight: 'bg-amber-50',
-      text: 'text-amber-600',
-      border: 'border-amber-500',
-      ring: 'ring-amber-500',
-      gradient: 'from-amber-50 to-white',
-    },
-  }
-
-  const colors = colorClasses[moduleColor] || colorClasses.purple
+  const colors = getModuleColors(moduleColor)
 
   // Pre-select the saved commitment but don't auto-show confirmation
   // This lets users change their selection if they want to

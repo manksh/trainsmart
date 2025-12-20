@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import { apiGet, apiDelete } from '@/lib/api'
+import { ExpandableSection, GroupedExpandableSection, ExpandableSectionOption } from '@/components/ui/ExpandableSection'
+import { ErrorBoundary, CardErrorFallback } from '@/components/error'
+import { useAsyncData } from '@/hooks/useAsyncData'
 
 interface UserMembership {
   organization_id: string
@@ -219,201 +222,6 @@ interface AllModulesStatus {
   modules: ModuleStatusItem[]
 }
 
-// === Dropdown Component ===
-interface DropdownProps {
-  title: string
-  icon: React.ReactNode
-  color: string
-  bgColor: string
-  options: (CheckInOption | TrainItem)[]
-  isExpanded: boolean
-  onToggle: () => void
-  onSelect: (route: string) => void
-}
-
-function ExpandableSection({ title, icon, color, bgColor, options, isExpanded, onToggle, onSelect }: DropdownProps) {
-  return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-      <button
-        onClick={onToggle}
-        className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
-      >
-        <div className="flex items-center gap-3">
-          <div className={`${bgColor} ${color} p-2 rounded-lg`}>
-            {icon}
-          </div>
-          <span className="font-semibold text-gray-900">{title}</span>
-        </div>
-        <svg
-          className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
-
-      {isExpanded && (
-        <div className="border-t border-gray-100 p-2">
-          {options.map((option) => (
-            <button
-              key={option.id}
-              onClick={() => 'isPlaceholder' in option && option.isPlaceholder ? null : onSelect(option.route)}
-              disabled={'isPlaceholder' in option && option.isPlaceholder}
-              className={`w-full flex items-center gap-3 p-3 rounded-lg text-left transition-colors ${
-                'isPlaceholder' in option && option.isPlaceholder
-                  ? 'opacity-50 cursor-not-allowed'
-                  : 'hover:bg-gray-50'
-              }`}
-            >
-              <div className={`${option.bgColor} ${option.color} p-2 rounded-lg`}>
-                {option.icon}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="font-medium text-gray-900">{option.name}</p>
-                  {'isPlaceholder' in option && option.isPlaceholder && (
-                    <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
-                      Coming soon
-                    </span>
-                  )}
-                </div>
-                <p className="text-sm text-gray-500 truncate">{option.description}</p>
-              </div>
-              {!('isPlaceholder' in option && option.isPlaceholder) && (
-                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              )}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
-
-// === Train Dropdown with Sub-sections ===
-interface TrainDropdownProps {
-  isExpanded: boolean
-  onToggle: () => void
-  onSelect: (route: string) => void
-  modules: TrainItem[]
-}
-
-function TrainDropdown({ isExpanded, onToggle, onSelect, modules }: TrainDropdownProps) {
-  return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-      <button
-        onClick={onToggle}
-        className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
-      >
-        <div className="flex items-center gap-3">
-          <div className="bg-indigo-100 text-indigo-600 p-2 rounded-lg">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-          </div>
-          <span className="font-semibold text-gray-900">Train</span>
-        </div>
-        <svg
-          className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
-
-      {isExpanded && (
-        <div className="border-t border-gray-100">
-          {/* Tools Section */}
-          <div className="p-3 pb-2">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2 px-1">Tools</p>
-            <div className="space-y-1">
-              {TOOL_OPTIONS.map((option) => (
-                <button
-                  key={option.id}
-                  onClick={() => option.isPlaceholder ? null : onSelect(option.route)}
-                  disabled={option.isPlaceholder}
-                  className={`w-full flex items-center gap-3 p-2.5 rounded-lg text-left transition-colors ${
-                    option.isPlaceholder
-                      ? 'opacity-50 cursor-not-allowed'
-                      : 'hover:bg-gray-50'
-                  }`}
-                >
-                  <div className={`${option.bgColor} ${option.color} p-1.5 rounded-lg`}>
-                    {option.icon}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium text-gray-900 text-sm">{option.name}</p>
-                      {option.isPlaceholder && (
-                        <span className="text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full">
-                          Soon
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-gray-500 truncate">{option.description}</p>
-                  </div>
-                  {!option.isPlaceholder && (
-                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Divider */}
-          <div className="border-t border-gray-100 mx-3" />
-
-          {/* Modules Section */}
-          <div className="p-3 pt-2">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2 px-1">Modules</p>
-            <div className="space-y-1">
-              {modules.map((option) => (
-                <button
-                  key={option.id}
-                  onClick={() => option.isPlaceholder ? null : onSelect(option.route)}
-                  disabled={option.isPlaceholder}
-                  className={`w-full flex items-center gap-3 p-2.5 rounded-lg text-left transition-colors ${
-                    option.isPlaceholder
-                      ? 'opacity-50 cursor-not-allowed'
-                      : 'hover:bg-gray-50'
-                  }`}
-                >
-                  <div className={`${option.bgColor} ${option.color} p-1.5 rounded-lg`}>
-                    {option.icon}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium text-gray-900 text-sm">{option.name}</p>
-                      {option.isPlaceholder && (
-                        <span className="text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full">
-                          Soon
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-gray-500 truncate">{option.description}</p>
-                  </div>
-                  {!option.isPlaceholder && (
-                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
 
 // === Weekly Activity Types ===
 interface DailyActivity {
@@ -452,43 +260,46 @@ interface CheckInHistoryData {
   page_size: number
 }
 
-// === Weekly Activity Tracker ===
-function WeeklyActivityTracker() {
-  const [activityData, setActivityData] = useState<WeeklyActivityData | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-
-  useEffect(() => {
-    const loadActivity = async () => {
-      try {
-        const data = await apiGet<WeeklyActivityData>('/checkins/me/activity/week')
-        setActivityData(data)
-      } catch (err) {
-        console.error('Failed to load weekly activity:', err)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-    loadActivity()
-  }, [])
-
-  if (isLoading) {
-    return (
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-        <div className="animate-pulse">
-          <div className="flex items-center justify-between mb-4">
-            <div className="h-5 w-24 bg-gray-200 rounded"></div>
-            <div className="h-4 w-20 bg-gray-200 rounded"></div>
-          </div>
-          <div className="flex justify-between gap-1 sm:gap-2">
-            {[...Array(7)].map((_, i) => (
-              <div key={i} className="flex flex-col items-center gap-2">
-                <div className="h-3 w-6 bg-gray-200 rounded"></div>
-                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-200 rounded-full"></div>
-              </div>
-            ))}
-          </div>
+// === Weekly Activity Loading Skeleton ===
+function WeeklyActivitySkeleton() {
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+      <div className="animate-pulse">
+        <div className="flex items-center justify-between mb-4">
+          <div className="h-5 w-24 bg-gray-200 rounded"></div>
+          <div className="h-4 w-20 bg-gray-200 rounded"></div>
+        </div>
+        <div className="flex justify-between gap-1 sm:gap-2">
+          {[...Array(7)].map((_, i) => (
+            <div key={i} className="flex flex-col items-center gap-2">
+              <div className="h-3 w-6 bg-gray-200 rounded"></div>
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-200 rounded-full"></div>
+            </div>
+          ))}
         </div>
       </div>
+    </div>
+  )
+}
+
+// === Weekly Activity Tracker ===
+function WeeklyActivityTracker() {
+  const { data: activityData, isLoading, error, refetch } = useAsyncData(
+    () => apiGet<WeeklyActivityData>('/checkins/me/activity/week'),
+    { fetchOnMount: true }
+  )
+
+  if (isLoading) {
+    return <WeeklyActivitySkeleton />
+  }
+
+  if (error) {
+    return (
+      <CardErrorFallback
+        error={error}
+        onReset={refetch}
+        title="Unable to load weekly activity"
+      />
     )
   }
 
@@ -540,26 +351,37 @@ function WeeklyActivityTracker() {
   )
 }
 
+// === Check-in History Loading Skeleton ===
+function CheckInHistorySkeleton() {
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+      <div className="animate-pulse">
+        <div className="h-5 w-32 bg-gray-200 rounded mb-4"></div>
+        <div className="space-y-3">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-gray-200 rounded-full"></div>
+              <div className="flex-1">
+                <div className="h-4 w-24 bg-gray-200 rounded mb-1"></div>
+                <div className="h-3 w-32 bg-gray-200 rounded"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // === Check-in History Component ===
 function CheckInHistory() {
   const router = useRouter()
-  const [history, setHistory] = useState<CheckInHistoryData | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
   const [isExpanded, setIsExpanded] = useState(false)
 
-  useEffect(() => {
-    const loadHistory = async () => {
-      try {
-        const data = await apiGet<CheckInHistoryData>('/checkins/me?page=1&page_size=10')
-        setHistory(data)
-      } catch (err) {
-        console.error('Failed to load check-in history:', err)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-    loadHistory()
-  }, [])
+  const { data: history, isLoading, error, refetch } = useAsyncData(
+    () => apiGet<CheckInHistoryData>('/checkins/me?page=1&page_size=10'),
+    { fetchOnMount: true }
+  )
 
   const getCheckInIcon = (type: string) => {
     switch (type) {
@@ -642,23 +464,16 @@ function CheckInHistory() {
   }
 
   if (isLoading) {
+    return <CheckInHistorySkeleton />
+  }
+
+  if (error) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-        <div className="animate-pulse">
-          <div className="h-5 w-32 bg-gray-200 rounded mb-4"></div>
-          <div className="space-y-3">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-gray-200 rounded-full"></div>
-                <div className="flex-1">
-                  <div className="h-4 w-24 bg-gray-200 rounded mb-1"></div>
-                  <div className="h-3 w-32 bg-gray-200 rounded"></div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+      <CardErrorFallback
+        error={error}
+        onReset={refetch}
+        title="Unable to load check-in history"
+      />
     )
   }
 
@@ -927,7 +742,7 @@ export default function HomePage() {
           }
           color="text-blue-600"
           bgColor="bg-blue-100"
-          options={CHECK_IN_OPTIONS}
+          options={CHECK_IN_OPTIONS as ExpandableSectionOption[]}
           isExpanded={checkInsExpanded}
           onToggle={() => {
             setCheckInsExpanded(!checkInsExpanded)
@@ -937,14 +752,25 @@ export default function HomePage() {
         />
 
         {/* Train Dropdown (Tools + Modules) */}
-        <TrainDropdown
+        <GroupedExpandableSection
+          title="Train"
+          icon={
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+          }
+          color="text-indigo-600"
+          bgColor="bg-indigo-100"
+          groups={[
+            { title: 'Tools', options: TOOL_OPTIONS as ExpandableSectionOption[] },
+            { title: 'Modules', options: trainingModules as ExpandableSectionOption[] },
+          ]}
           isExpanded={trainExpanded}
           onToggle={() => {
             setTrainExpanded(!trainExpanded)
             if (!trainExpanded) setCheckInsExpanded(false) // Close other dropdown
           }}
           onSelect={handleNavigate}
-          modules={trainingModules}
         />
       </div>
 

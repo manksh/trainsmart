@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import { ZoneDiagramContent, ScreenComponentProps, ScreenResponse } from '../types'
+import { getModuleColors } from '@/lib/colors'
 
 interface ZoneDiagramProps extends ScreenComponentProps {
   content: ZoneDiagramContent
 }
 
+// Zone-specific colors (not module colors, these are content-driven)
 const zoneColors = {
   green: {
     fill: 'fill-green-100',
@@ -46,13 +48,7 @@ export default function ZoneDiagram({
   )
   const [showDescription, setShowDescription] = useState(false)
 
-  const buttonColors: Record<string, string> = {
-    emerald: 'bg-emerald-600',
-    purple: 'bg-purple-600',
-    blue: 'bg-blue-600',
-  }
-
-  const btnColor = buttonColors[moduleColor] || buttonColors.purple
+  const colors = getModuleColors(moduleColor)
 
   useEffect(() => {
     if (savedResponse?.selection) {
@@ -164,7 +160,7 @@ export default function ZoneDiagram({
         <button
           onClick={handleContinue}
           disabled={!selectedZone}
-          className={`w-full ${btnColor} text-white font-semibold py-4 px-6 rounded-xl hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed`}
+          className={`w-full ${colors.bg} text-white font-semibold py-4 px-6 rounded-xl hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed`}
         >
           Continue
         </button>

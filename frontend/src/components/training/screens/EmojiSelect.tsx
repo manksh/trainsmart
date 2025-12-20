@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { EmojiSelectContent, ScreenComponentProps } from '../types'
+import { getModuleColors } from '@/lib/colors'
 
 interface EmojiSelectProps extends ScreenComponentProps {
   content: EmojiSelectContent
@@ -19,38 +20,7 @@ export default function EmojiSelect({
   )
   const [customText, setCustomText] = useState<string>(savedResponse?.text_input || '')
 
-  const colorClasses: Record<string, { bg: string; bgLight: string; text: string; border: string; ring: string }> = {
-    emerald: {
-      bg: 'bg-emerald-600',
-      bgLight: 'bg-emerald-50',
-      text: 'text-emerald-600',
-      border: 'border-emerald-500',
-      ring: 'ring-emerald-500',
-    },
-    purple: {
-      bg: 'bg-purple-600',
-      bgLight: 'bg-purple-50',
-      text: 'text-purple-600',
-      border: 'border-purple-500',
-      ring: 'ring-purple-500',
-    },
-    blue: {
-      bg: 'bg-blue-600',
-      bgLight: 'bg-blue-50',
-      text: 'text-blue-600',
-      border: 'border-blue-500',
-      ring: 'ring-blue-500',
-    },
-    amber: {
-      bg: 'bg-amber-600',
-      bgLight: 'bg-amber-50',
-      text: 'text-amber-600',
-      border: 'border-amber-500',
-      ring: 'ring-amber-500',
-    },
-  }
-
-  const colors = colorClasses[moduleColor] || colorClasses.purple
+  const colors = getModuleColors(moduleColor)
 
   useEffect(() => {
     if (savedResponse?.selections) {
@@ -127,7 +97,7 @@ export default function EmojiSelect({
               value={customText}
               onChange={(e) => setCustomText(e.target.value)}
               placeholder="Type your answer..."
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className={`w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 ${colors.focusRing.replace('focus:', '')} focus:border-transparent`}
             />
           </div>
         )}

@@ -8,8 +8,9 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy import select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_db, get_current_active_user
+from app.api.deps import get_db, get_current_active_user, verify_org_membership
 from app.models.user import User
+from app.services.checkin import get_today_checkins as svc_get_today_checkins
 from app.models.checkin import (
     CheckIn,
     CheckInType,
@@ -122,18 +123,7 @@ async def create_breathing_checkin(
 ):
     """Create a new breathing check-in."""
     # Verify user has membership in the organization
-    membership_result = await db.execute(
-        select(Membership)
-        .where(Membership.user_id == current_user.id)
-        .where(Membership.organization_id == checkin.organization_id)
-    )
-    membership = membership_result.scalar_one_or_none()
-
-    if not membership:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not a member of this organization"
-        )
+    await verify_org_membership(db, current_user.id, checkin.organization_id)
 
     # Validate breathing exercise type
     valid_types = [e.value for e in BreathingExerciseType]
@@ -178,19 +168,9 @@ async def get_today_breathing_status(
     current_user: User = Depends(get_current_active_user),
 ):
     """Check if user has completed a breathing check-in today."""
-    today = date.today()
-    start_of_day = datetime.combine(today, datetime.min.time())
-    end_of_day = datetime.combine(today, datetime.max.time())
-
-    result = await db.execute(
-        select(CheckIn)
-        .where(CheckIn.user_id == current_user.id)
-        .where(CheckIn.check_in_type == CheckInType.BREATHING.value)
-        .where(CheckIn.created_at >= start_of_day)
-        .where(CheckIn.created_at <= end_of_day)
-        .order_by(CheckIn.created_at.desc())
+    check_ins = await svc_get_today_checkins(
+        db, current_user.id, CheckInType.BREATHING
     )
-    check_ins = result.scalars().all()
 
     return {
         "has_checked_in_today": len(check_ins) > 0,
@@ -205,26 +185,14 @@ async def get_today_checkin_status(
     current_user: User = Depends(get_current_active_user),
 ):
     """Check if user has completed a mood check-in today."""
-    # Get today's date range
-    today = date.today()
-    start_of_day = datetime.combine(today, datetime.min.time())
-    end_of_day = datetime.combine(today, datetime.max.time())
-
-    result = await db.execute(
-        select(CheckIn)
-        .where(CheckIn.user_id == current_user.id)
-        .where(CheckIn.check_in_type == "mood")
-        .where(CheckIn.created_at >= start_of_day)
-        .where(CheckIn.created_at <= end_of_day)
-        .order_by(CheckIn.created_at.desc())
-        .limit(1)
+    check_ins = await svc_get_today_checkins(
+        db, current_user.id, CheckInType.MOOD, limit=1
     )
-    check_in = result.scalar_one_or_none()
 
-    if check_in:
+    if check_ins:
         return TodayCheckInStatus(
             has_checked_in_today=True,
-            check_in=CheckInOut.model_validate(check_in),
+            check_in=CheckInOut.model_validate(check_ins[0]),
         )
 
     return TodayCheckInStatus(has_checked_in_today=False)
@@ -272,18 +240,7 @@ async def create_checkin(
 ):
     """Create a new check-in."""
     # Verify user has membership in the organization
-    membership_result = await db.execute(
-        select(Membership)
-        .where(Membership.user_id == current_user.id)
-        .where(Membership.organization_id == checkin.organization_id)
-    )
-    membership = membership_result.scalar_one_or_none()
-
-    if not membership:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not a member of this organization"
-        )
+    await verify_org_membership(db, current_user.id, checkin.organization_id)
 
     # Validate emotion
     valid_emotions = [e.value for e in Emotion]
@@ -530,18 +487,7 @@ async def create_confidence_checkin(
 ):
     """Create a new confidence check-in."""
     # Verify user has membership in the organization
-    membership_result = await db.execute(
-        select(Membership)
-        .where(Membership.user_id == current_user.id)
-        .where(Membership.organization_id == checkin.organization_id)
-    )
-    membership = membership_result.scalar_one_or_none()
-
-    if not membership:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not a member of this organization"
-        )
+    await verify_org_membership(db, current_user.id, checkin.organization_id)
 
     # Validate confidence level
     if checkin.confidence_level < 1 or checkin.confidence_level > 7:
@@ -576,19 +522,9 @@ async def get_today_confidence_status(
     current_user: User = Depends(get_current_active_user),
 ):
     """Check if user has completed a confidence check-in today."""
-    today = date.today()
-    start_of_day = datetime.combine(today, datetime.min.time())
-    end_of_day = datetime.combine(today, datetime.max.time())
-
-    result = await db.execute(
-        select(CheckIn)
-        .where(CheckIn.user_id == current_user.id)
-        .where(CheckIn.check_in_type == CheckInType.CONFIDENCE.value)
-        .where(CheckIn.created_at >= start_of_day)
-        .where(CheckIn.created_at <= end_of_day)
-        .order_by(CheckIn.created_at.desc())
+    check_ins = await svc_get_today_checkins(
+        db, current_user.id, CheckInType.CONFIDENCE
     )
-    check_ins = result.scalars().all()
 
     return {
         "has_checked_in_today": len(check_ins) > 0,
@@ -650,18 +586,7 @@ async def create_energy_checkin(
 ):
     """Create a new energy check-in."""
     # Verify user has membership in the organization
-    membership_result = await db.execute(
-        select(Membership)
-        .where(Membership.user_id == current_user.id)
-        .where(Membership.organization_id == checkin.organization_id)
-    )
-    membership = membership_result.scalar_one_or_none()
-
-    if not membership:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not a member of this organization"
-        )
+    await verify_org_membership(db, current_user.id, checkin.organization_id)
 
     # Validate energy levels
     if checkin.physical_energy < 1 or checkin.physical_energy > 7:
@@ -705,19 +630,9 @@ async def get_today_energy_status(
     current_user: User = Depends(get_current_active_user),
 ):
     """Check if user has completed an energy check-in today."""
-    today = date.today()
-    start_of_day = datetime.combine(today, datetime.min.time())
-    end_of_day = datetime.combine(today, datetime.max.time())
-
-    result = await db.execute(
-        select(CheckIn)
-        .where(CheckIn.user_id == current_user.id)
-        .where(CheckIn.check_in_type == CheckInType.ENERGY.value)
-        .where(CheckIn.created_at >= start_of_day)
-        .where(CheckIn.created_at <= end_of_day)
-        .order_by(CheckIn.created_at.desc())
+    check_ins = await svc_get_today_checkins(
+        db, current_user.id, CheckInType.ENERGY
     )
-    check_ins = result.scalars().all()
 
     return {
         "has_checked_in_today": len(check_ins) > 0,

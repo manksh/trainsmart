@@ -1,6 +1,7 @@
 'use client'
 
 import { ScreenComponentProps, ScreenResponse } from '../types'
+import { getModuleColors } from '@/lib/colors'
 
 interface MicroCommitmentConfirmationContent {
   title: string
@@ -21,38 +22,7 @@ export default function MicroCommitmentConfirmation({
   moduleColor,
   allScreenResponses,
 }: MicroCommitmentConfirmationProps) {
-  const colorClasses: Record<string, { bg: string; bgLight: string; text: string; border: string; gradient: string }> = {
-    emerald: {
-      bg: 'bg-emerald-600',
-      bgLight: 'bg-emerald-50',
-      text: 'text-emerald-600',
-      border: 'border-emerald-500',
-      gradient: 'from-emerald-50 to-white',
-    },
-    purple: {
-      bg: 'bg-purple-600',
-      bgLight: 'bg-purple-50',
-      text: 'text-purple-600',
-      border: 'border-purple-500',
-      gradient: 'from-purple-50 to-white',
-    },
-    blue: {
-      bg: 'bg-blue-600',
-      bgLight: 'bg-blue-50',
-      text: 'text-blue-600',
-      border: 'border-blue-500',
-      gradient: 'from-blue-50 to-white',
-    },
-    amber: {
-      bg: 'bg-amber-600',
-      bgLight: 'bg-amber-50',
-      text: 'text-amber-600',
-      border: 'border-amber-500',
-      gradient: 'from-amber-50 to-white',
-    },
-  }
-
-  const colors = colorClasses[moduleColor] || colorClasses.purple
+  const colors = getModuleColors(moduleColor)
 
   // Try to find the commitment from the previous micro_commitment screen
   const getCommitmentText = () => {
