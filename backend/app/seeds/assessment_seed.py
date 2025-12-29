@@ -34,7 +34,7 @@ VOLLEYBALL_ASSESSMENT_QUESTIONS = [
     {"id": 19, "text": "I'm aware of my weaknesses.", "pillar": "Self-Awareness", "secondary_pillar": None, "is_reverse": False, "category": None},
     {"id": 20, "text": "I'm aware of how I typically think in different situations (i.e., my thinking patterns).", "pillar": "Self-Awareness", "secondary_pillar": None, "is_reverse": False, "category": "thinking"},
     {"id": 21, "text": "I'm aware of how I typically feel in different situations (i.e., my patterns of emotions)", "pillar": "Self-Awareness", "secondary_pillar": None, "is_reverse": False, "category": "feeling"},
-    {"id": 22, "text": "I'm aware of how I typical act in different situations (i.e., my patterns of behaviour).", "pillar": "Self-Awareness", "secondary_pillar": None, "is_reverse": False, "category": "acting"},
+    {"id": 22, "text": "I'm aware of how I typically act in different situations (i.e., my patterns of behaviour).", "pillar": "Self-Awareness", "secondary_pillar": None, "is_reverse": False, "category": "acting"},
     {"id": 23, "text": "I have a clear idea of the values that shape who I am.", "pillar": "Self-Awareness", "secondary_pillar": None, "is_reverse": False, "category": None},
     {"id": 24, "text": "I know what I need to do to feel healthy.", "pillar": "Self-Awareness", "secondary_pillar": "Wellness", "is_reverse": False, "category": "acting"},
     {"id": 25, "text": "I often reflect on my thoughts.", "pillar": "Self-Awareness", "secondary_pillar": None, "is_reverse": True, "category": "thinking"},
