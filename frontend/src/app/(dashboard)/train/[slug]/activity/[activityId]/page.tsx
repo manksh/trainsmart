@@ -95,14 +95,8 @@ export default function ActivityPage() {
           }
         }
 
-        await apiPatch(`/training-modules/progress/${progress.id}`, {
-          progress_data: {
-            ...progress.progress_data,
-            ...updatedProgressData,
-          },
-        })
-
-        // Update local state
+        // Optimistic update: update local state immediately so next screen has access
+        // This is critical for ConditionalContent which needs previous screen responses
         setProgress((prev) =>
           prev
             ? {
@@ -114,6 +108,14 @@ export default function ActivityPage() {
               }
             : null
         )
+
+        // Then persist to server (fire and forget for responsiveness)
+        await apiPatch(`/training-modules/progress/${progress.id}`, {
+          progress_data: {
+            ...progress.progress_data,
+            ...updatedProgressData,
+          },
+        })
       } catch (err) {
         console.error('Failed to save progress:', err)
       } finally {

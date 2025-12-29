@@ -6,6 +6,7 @@ import {
   SwipeCardContent,
   StaticCardContent,
   TapRevealListContent,
+  TapRevealCategoriesContent,
   FullScreenStatementContent,
   SingleTapReflectionContent,
   TapRevealColumnsContent,
@@ -19,10 +20,14 @@ import {
   TextInputContent,
   ConfirmationDisplayContent,
   CategoryToggleContent,
+  ConditionalContentContent,
+  TapMatchingContent,
+  GuidedBreathingContent,
 } from '../types'
 import SwipeCard from './SwipeCard'
 import StaticCard from './StaticCard'
 import TapRevealList from './TapRevealList'
+import TapRevealCategories from './TapRevealCategories'
 import FullScreenStatement from './FullScreenStatement'
 import SingleTapReflection from './SingleTapReflection'
 import TapRevealColumns from './TapRevealColumns'
@@ -36,6 +41,9 @@ import MultiSelect from './MultiSelect'
 import TextInput from './TextInput'
 import ConfirmationDisplay from './ConfirmationDisplay'
 import CategoryToggle from './CategoryToggle'
+import ConditionalContent from './ConditionalContent'
+import TapMatching from './TapMatching'
+import GuidedBreathing from './GuidedBreathing'
 
 interface ScreenRendererProps {
   screen: Screen
@@ -103,6 +111,7 @@ export default function ScreenRenderer({
       )
 
     case 'single_tap_reflection':
+    case 'single_select':
       return (
         <SingleTapReflection
           {...commonProps}
@@ -159,6 +168,39 @@ export default function ScreenRenderer({
         />
       )
 
+    case 'tap_reveal_categories':
+      return (
+        <TapRevealCategories
+          {...commonProps}
+          content={screen.content as TapRevealCategoriesContent}
+        />
+      )
+
+    case 'conditional_content':
+      return (
+        <ConditionalContent
+          {...commonProps}
+          content={screen.content as ConditionalContentContent}
+          allScreenResponses={allScreenResponses}
+        />
+      )
+
+    case 'tap_matching':
+      return (
+        <TapMatching
+          {...commonProps}
+          content={screen.content as TapMatchingContent}
+        />
+      )
+
+    case 'guided_breathing':
+      return (
+        <GuidedBreathing
+          {...commonProps}
+          content={screen.content as GuidedBreathingContent}
+        />
+      )
+
     default:
       return (
         <PlaceholderScreen
@@ -185,6 +227,7 @@ function PlaceholderScreen({
     purple: 'bg-purple-600',
     blue: 'bg-blue-600',
     amber: 'bg-amber-600',
+    cyan: 'bg-cyan-600',
   }
 
   const bgColor = colorClasses[moduleColor] || colorClasses.purple

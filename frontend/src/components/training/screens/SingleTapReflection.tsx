@@ -29,11 +29,12 @@ export default function SingleTapReflection({
 
   const handleSelect = (optionId: string) => {
     setSelectedOption(optionId)
+    // Save immediately so ConditionalContent on next screen has access to the response
+    onSaveResponse({ selection: optionId })
   }
 
   const handleContinue = () => {
     if (selectedOption) {
-      onSaveResponse({ selection: selectedOption })
       onContinue()
     }
   }

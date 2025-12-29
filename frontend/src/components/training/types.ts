@@ -153,14 +153,69 @@ export interface ActivityCompletionContent {
   next_activity_hint?: string
 }
 
+// TapRevealCategories - Grouped tap-to-reveal with categories
+export interface TapRevealCategoriesContent {
+  header?: string
+  categories: Array<{
+    id: string
+    title: string
+    items: Array<{ id: string; text: string }>
+  }>
+  reveal_mode: 'sequential' | 'any_order'
+  subtext_after_reveal?: string
+}
+
+// ConditionalContent - Shows different content based on previous responses
+// Uses a branching format where each possible response maps to a different screen
+export interface ConditionalContentContent {
+  condition_screen: string // Screen ID to check for the user's response
+  conditions: Record<string, ConditionalBranch> // Maps response value to screen to show
+  default_branch?: ConditionalBranch // Optional fallback if no condition matches
+}
+
+// A branch within conditional content - defines what screen to show
+export interface ConditionalBranch {
+  type: ScreenType
+  content:
+    | StaticCardContent
+    | GuidedBreathingContent
+    | TapRevealListContent
+    | FullScreenStatementContent
+    | SingleTapReflectionContent
+}
+
+// TapMatching - Interactive matching exercise
+export interface TapMatchingContent {
+  prompt: string
+  items: Array<{ id: string; text: string; correct_match: string }>
+  targets: Array<{ id: string; label: string }>
+  show_feedback: boolean
+}
+
+// GuidedBreathing - Breathing exercise with visual guidance
+export interface GuidedBreathingContent {
+  title: string
+  instruction?: string
+  timing: {
+    inhale_seconds: number
+    hold_seconds?: number
+    exhale_seconds: number
+  }
+  cycles: number
+  skippable: boolean
+  audio_enabled?: boolean
+}
+
 // Union type for all screen types
 export type ScreenType =
   | 'swipe_card'
   | 'static_card'
   | 'tap_reveal_list'
   | 'tap_reveal_columns'
+  | 'tap_reveal_categories'
   | 'zone_diagram'
   | 'single_tap_reflection'
+  | 'single_select'
   | 'recognition_list'
   | 'full_screen_statement'
   | 'micro_commitment'
@@ -171,6 +226,9 @@ export type ScreenType =
   | 'text_input'
   | 'confirmation_display'
   | 'category_toggle'
+  | 'conditional_content'
+  | 'tap_matching'
+  | 'guided_breathing'
 
 export interface Screen {
   id: string
@@ -180,6 +238,7 @@ export interface Screen {
     | StaticCardContent
     | TapRevealListContent
     | TapRevealColumnsContent
+    | TapRevealCategoriesContent
     | ZoneDiagramContent
     | SingleTapReflectionContent
     | RecognitionListContent
@@ -192,6 +251,9 @@ export interface Screen {
     | TextInputContent
     | ConfirmationDisplayContent
     | CategoryToggleContent
+    | ConditionalContentContent
+    | TapMatchingContent
+    | GuidedBreathingContent
 }
 
 export interface Activity {
@@ -215,6 +277,10 @@ export interface ScreenResponse {
   revealed_items?: string[]
   text_input?: string
   category_assignments?: Record<string, string> // item_id -> category_id
+  matches?: Record<string, string> // item_id -> target_id (for TapMatching)
+  breathing_completed?: boolean // for GuidedBreathing
+  cycles_completed?: number // for GuidedBreathing
+  breathing_skipped?: boolean // for GuidedBreathing
 }
 
 export interface SequentialProgressData {
