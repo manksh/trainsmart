@@ -8,9 +8,10 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy import select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_db, get_current_active_user, verify_org_membership
+from app.api.deps import get_db, get_current_active_user
 from app.models.user import User
 from app.services.checkin import get_today_checkins as svc_get_today_checkins
+from app.services.checkin_create import create_checkin_record
 from app.models.checkin import (
     CheckIn,
     CheckInType,
@@ -122,9 +123,6 @@ async def create_breathing_checkin(
     current_user: User = Depends(get_current_active_user),
 ):
     """Create a new breathing check-in."""
-    # Verify user has membership in the organization
-    await verify_org_membership(db, current_user.id, checkin.organization_id)
-
     # Validate breathing exercise type
     valid_types = [e.value for e in BreathingExerciseType]
     if checkin.breathing_exercise_type not in valid_types:
@@ -133,7 +131,7 @@ async def create_breathing_checkin(
             detail=f"Invalid breathing exercise type. Must be one of: {', '.join(valid_types)}"
         )
 
-    # Validate trigger if provided
+    # Validate trigger if provided (just a soft check, don't reject)
     if checkin.trigger_selected:
         exercise_config = BREATHING_CONFIG.get(
             BreathingExerciseType(checkin.breathing_exercise_type)
@@ -142,11 +140,11 @@ async def create_breathing_checkin(
             # Just log a warning, don't reject - user might have custom reason
             pass
 
-    # Create the breathing check-in
-    new_checkin = CheckIn(
+    return await create_checkin_record(
+        db=db,
         user_id=current_user.id,
         organization_id=checkin.organization_id,
-        check_in_type=CheckInType.BREATHING.value,
+        check_in_type=CheckInType.BREATHING,
         breathing_exercise_type=checkin.breathing_exercise_type,
         cycles_completed=checkin.cycles_completed,
         duration_seconds=checkin.duration_seconds,
@@ -154,12 +152,6 @@ async def create_breathing_checkin(
         effectiveness_rating=checkin.effectiveness_rating,
         notes=checkin.notes,
     )
-
-    db.add(new_checkin)
-    await db.commit()
-    await db.refresh(new_checkin)
-
-    return new_checkin
 
 
 @router.get("/breathing/me/today")
@@ -238,10 +230,7 @@ async def create_checkin(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    """Create a new check-in."""
-    # Verify user has membership in the organization
-    await verify_org_membership(db, current_user.id, checkin.organization_id)
-
+    """Create a new mood check-in."""
     # Validate emotion
     valid_emotions = [e.value for e in Emotion]
     if checkin.emotion not in valid_emotions:
@@ -258,11 +247,11 @@ async def create_checkin(
                 detail=f"Invalid body area: {area}. Must be one of: {', '.join(BODY_AREAS)}"
             )
 
-    # Create the check-in
-    new_checkin = CheckIn(
+    return await create_checkin_record(
+        db=db,
         user_id=current_user.id,
         organization_id=checkin.organization_id,
-        check_in_type=checkin.check_in_type,
+        check_in_type=CheckInType.MOOD,
         emotion=checkin.emotion,
         intensity=checkin.intensity,
         body_areas=checkin.body_areas,
@@ -270,12 +259,6 @@ async def create_checkin(
         selected_action=checkin.selected_action,
         notes=checkin.notes,
     )
-
-    db.add(new_checkin)
-    await db.commit()
-    await db.refresh(new_checkin)
-
-    return new_checkin
 
 
 @router.get("/{checkin_id}", response_model=CheckInOut)
@@ -486,21 +469,18 @@ async def create_confidence_checkin(
     current_user: User = Depends(get_current_active_user),
 ):
     """Create a new confidence check-in."""
-    # Verify user has membership in the organization
-    await verify_org_membership(db, current_user.id, checkin.organization_id)
-
-    # Validate confidence level
+    # Validate confidence level (also validated by Pydantic, but double-check)
     if checkin.confidence_level < 1 or checkin.confidence_level > 7:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Confidence level must be between 1 and 7"
         )
 
-    # Create the confidence check-in
-    new_checkin = CheckIn(
+    return await create_checkin_record(
+        db=db,
         user_id=current_user.id,
         organization_id=checkin.organization_id,
-        check_in_type=CheckInType.CONFIDENCE.value,
+        check_in_type=CheckInType.CONFIDENCE,
         confidence_level=checkin.confidence_level,
         confidence_sources=checkin.confidence_sources,
         doubt_sources=checkin.doubt_sources,
@@ -508,12 +488,6 @@ async def create_confidence_checkin(
         selected_action=checkin.selected_action,
         notes=checkin.notes,
     )
-
-    db.add(new_checkin)
-    await db.commit()
-    await db.refresh(new_checkin)
-
-    return new_checkin
 
 
 @router.get("/confidence/me/today")
@@ -585,10 +559,7 @@ async def create_energy_checkin(
     current_user: User = Depends(get_current_active_user),
 ):
     """Create a new energy check-in."""
-    # Verify user has membership in the organization
-    await verify_org_membership(db, current_user.id, checkin.organization_id)
-
-    # Validate energy levels
+    # Validate energy levels (also validated by Pydantic, but double-check)
     if checkin.physical_energy < 1 or checkin.physical_energy > 7:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -603,11 +574,11 @@ async def create_energy_checkin(
     # Calculate energy state
     energy_state = get_energy_state(checkin.physical_energy, checkin.mental_energy)
 
-    # Create the energy check-in
-    new_checkin = CheckIn(
+    return await create_checkin_record(
+        db=db,
         user_id=current_user.id,
         organization_id=checkin.organization_id,
-        check_in_type=CheckInType.ENERGY.value,
+        check_in_type=CheckInType.ENERGY,
         physical_energy=checkin.physical_energy,
         mental_energy=checkin.mental_energy,
         physical_factors=checkin.physical_factors,
@@ -616,12 +587,6 @@ async def create_energy_checkin(
         selected_action=checkin.selected_action,
         notes=checkin.notes,
     )
-
-    db.add(new_checkin)
-    await db.commit()
-    await db.refresh(new_checkin)
-
-    return new_checkin
 
 
 @router.get("/energy/me/today")
