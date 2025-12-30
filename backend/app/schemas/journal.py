@@ -32,6 +32,7 @@ class JournalConfigOut(BaseModel):
     emotion_options: Dict[str, List[Dict[str, str]]]
     open_ended_tags: List[str]
     open_ended_prompts: List[str]
+    i_know_prompts: List[str]
 
 
 # === Journal Entry Schemas ===
@@ -60,6 +61,11 @@ class JournalEntryBase(BaseModel):
     content: Optional[str] = None
     tags: Optional[List[str]] = None
     prompt_used: Optional[str] = Field(None, max_length=500)
+
+    # I Know fields
+    i_know_statement: Optional[str] = Field(None, max_length=500)
+    i_know_why_matters: Optional[str] = Field(None, max_length=500)
+    i_know_feeling: Optional[str] = None
 
 
 class JournalEntryCreate(JournalEntryBase):
@@ -90,6 +96,11 @@ class JournalEntryUpdate(BaseModel):
     tags: Optional[List[str]] = None
     prompt_used: Optional[str] = Field(None, max_length=500)
 
+    # I Know fields
+    i_know_statement: Optional[str] = Field(None, max_length=500)
+    i_know_why_matters: Optional[str] = Field(None, max_length=500)
+    i_know_feeling: Optional[str] = None
+
 
 class JournalEntryOut(BaseModel):
     """Schema for journal entry response."""
@@ -118,6 +129,11 @@ class JournalEntryOut(BaseModel):
     content: Optional[str] = None
     tags: Optional[List[str]] = None
     prompt_used: Optional[str] = None
+
+    # I Know fields
+    i_know_statement: Optional[str] = None
+    i_know_why_matters: Optional[str] = None
+    i_know_feeling: Optional[str] = None
 
     # Shared fields
     word_count: Optional[int] = None

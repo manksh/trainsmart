@@ -19,6 +19,7 @@ from app.models import (
     EMOTION_OPTIONS,
     OPEN_ENDED_TAGS,
     OPEN_ENDED_PROMPTS,
+    I_KNOW_PROMPTS,
     Membership,
 )
 from app.schemas.journal import (
@@ -87,6 +88,12 @@ async def get_journal_config(
                 "description": "Write whatever is on your mind",
                 "icon": "pencil",
             },
+            {
+                "key": JournalType.I_KNOW.value,
+                "label": "I Know...",
+                "description": "Reinforce what you know to be true",
+                "icon": "lightbulb",
+            },
         ],
         affirmations=affirmations_config,
         affirmation_timing_options=AFFIRMATION_TIMING_OPTIONS,
@@ -94,6 +101,7 @@ async def get_journal_config(
         emotion_options=EMOTION_OPTIONS,
         open_ended_tags=OPEN_ENDED_TAGS,
         open_ended_prompts=OPEN_ENDED_PROMPTS,
+        i_know_prompts=I_KNOW_PROMPTS,
     )
 
 
@@ -119,6 +127,19 @@ async def create_journal_entry(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Invalid journal type: {entry_data.journal_type}",
         )
+
+    # Validate required fields for i_know type
+    if entry_data.journal_type == JournalType.I_KNOW.value:
+        if not entry_data.i_know_statement:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="i_know_statement is required for i_know journal type",
+            )
+        if not entry_data.i_know_feeling:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="i_know_feeling is required for i_know journal type",
+            )
 
     # Calculate word count for open-ended entries
     word_count = None
@@ -147,6 +168,10 @@ async def create_journal_entry(
         content=entry_data.content,
         tags=entry_data.tags,
         prompt_used=entry_data.prompt_used,
+        # I Know
+        i_know_statement=entry_data.i_know_statement,
+        i_know_why_matters=entry_data.i_know_why_matters,
+        i_know_feeling=entry_data.i_know_feeling,
         # Shared
         word_count=word_count,
     )

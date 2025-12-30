@@ -36,13 +36,22 @@ class TestJournalConfig:
         assert "open_ended_tags" in data
         assert "open_ended_prompts" in data
 
-        # Check we have all 4 journal types
-        assert len(data["journal_types"]) == 4
+        # Check we have all 5 journal types
+        assert len(data["journal_types"]) == 5
         journal_keys = [jt["key"] for jt in data["journal_types"]]
         assert "affirmations" in journal_keys
         assert "daily_wins" in journal_keys
         assert "gratitude" in journal_keys
         assert "open_ended" in journal_keys
+        assert "i_know" in journal_keys
+
+        # Check i_know prompts are included
+        assert "i_know_prompts" in data
+        assert len(data["i_know_prompts"]) > 0
+
+        # Check i_know emotion options are included
+        assert "i_know" in data["emotion_options"]
+        assert len(data["emotion_options"]["i_know"]) > 0
 
         # Check journal type structure
         journal_type = data["journal_types"][0]
@@ -68,6 +77,58 @@ class TestJournalConfig:
 
 class TestCreateJournalEntry:
     """Tests for creating journal entries."""
+
+    @pytest.mark.asyncio
+    async def test_create_journal_no_trailing_slash(
+        self,
+        client: AsyncClient,
+        athlete_token: str,
+        organization: Organization,
+    ):
+        """Should create journal entry at /journals (no trailing slash).
+
+        This test ensures the endpoint works without trailing slash.
+        The backend has redirect_slashes=False, so the frontend must use
+        the exact path. This test will catch URL mismatches.
+        """
+        response = await client.post(
+            "/api/v1/journals",  # No trailing slash - matches backend route
+            headers=auth_headers(athlete_token),
+            json={
+                "organization_id": str(organization.id),
+                "journal_type": "affirmations",
+                "affirmation_focus_area": "confidence",
+                "affirmation_text": "Test affirmation",
+            },
+        )
+
+        assert response.status_code == 201
+
+    @pytest.mark.asyncio
+    async def test_create_journal_trailing_slash_returns_404(
+        self,
+        client: AsyncClient,
+        athlete_token: str,
+        organization: Organization,
+    ):
+        """Trailing slash should return 404 since redirect_slashes=False.
+
+        This test documents the expected behavior and will catch if
+        someone accidentally enables redirect_slashes or changes routing.
+        """
+        response = await client.post(
+            "/api/v1/journals/",  # WITH trailing slash - should fail
+            headers=auth_headers(athlete_token),
+            json={
+                "organization_id": str(organization.id),
+                "journal_type": "affirmations",
+                "affirmation_focus_area": "confidence",
+                "affirmation_text": "Test affirmation",
+            },
+        )
+
+        # With redirect_slashes=False, trailing slash returns 404
+        assert response.status_code == 404
 
     @pytest.mark.asyncio
     async def test_create_affirmation_entry_success(
@@ -231,6 +292,101 @@ class TestCreateJournalEntry:
         assert data["content"] == content
         assert data["prompt_used"] is None
         assert data["tags"] is None
+
+    @pytest.mark.asyncio
+    async def test_create_i_know_entry_success(
+        self,
+        client: AsyncClient,
+        athlete_token: str,
+        organization: Organization,
+    ):
+        """Should create an I Know journal entry with all fields."""
+        response = await client.post(
+            "/api/v1/journals",
+            headers=auth_headers(athlete_token),
+            json={
+                "organization_id": str(organization.id),
+                "journal_type": "i_know",
+                "i_know_statement": "I know I can handle pressure because I have trained for this",
+                "i_know_why_matters": "It reminds me that I am prepared and capable",
+                "i_know_feeling": "grounded",
+            },
+        )
+
+        assert response.status_code == 201
+        data = response.json()
+        assert data["journal_type"] == "i_know"
+        assert data["i_know_statement"] == "I know I can handle pressure because I have trained for this"
+        assert data["i_know_why_matters"] == "It reminds me that I am prepared and capable"
+        assert data["i_know_feeling"] == "grounded"
+
+    @pytest.mark.asyncio
+    async def test_create_i_know_entry_required_fields_only(
+        self,
+        client: AsyncClient,
+        athlete_token: str,
+        organization: Organization,
+    ):
+        """Should create an I Know entry with only required fields."""
+        response = await client.post(
+            "/api/v1/journals",
+            headers=auth_headers(athlete_token),
+            json={
+                "organization_id": str(organization.id),
+                "journal_type": "i_know",
+                "i_know_statement": "I know my effort matters",
+                "i_know_feeling": "motivated",
+            },
+        )
+
+        assert response.status_code == 201
+        data = response.json()
+        assert data["journal_type"] == "i_know"
+        assert data["i_know_statement"] == "I know my effort matters"
+        assert data["i_know_why_matters"] is None
+        assert data["i_know_feeling"] == "motivated"
+
+    @pytest.mark.asyncio
+    async def test_create_i_know_entry_missing_statement(
+        self,
+        client: AsyncClient,
+        athlete_token: str,
+        organization: Organization,
+    ):
+        """Should reject I Know entry without statement."""
+        response = await client.post(
+            "/api/v1/journals",
+            headers=auth_headers(athlete_token),
+            json={
+                "organization_id": str(organization.id),
+                "journal_type": "i_know",
+                "i_know_feeling": "grounded",
+            },
+        )
+
+        assert response.status_code == 400
+        assert "i_know_statement is required" in response.json()["detail"]
+
+    @pytest.mark.asyncio
+    async def test_create_i_know_entry_missing_feeling(
+        self,
+        client: AsyncClient,
+        athlete_token: str,
+        organization: Organization,
+    ):
+        """Should reject I Know entry without feeling."""
+        response = await client.post(
+            "/api/v1/journals",
+            headers=auth_headers(athlete_token),
+            json={
+                "organization_id": str(organization.id),
+                "journal_type": "i_know",
+                "i_know_statement": "I know I can do this",
+            },
+        )
+
+        assert response.status_code == 400
+        assert "i_know_feeling is required" in response.json()["detail"]
 
     @pytest.mark.asyncio
     async def test_create_entry_invalid_journal_type(

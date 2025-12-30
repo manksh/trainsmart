@@ -50,6 +50,11 @@ const icons: Record<string, React.ReactNode> = {
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
     </svg>
   ),
+  lightbulb: (
+    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+    </svg>
+  ),
 }
 
 const typeColors: Record<string, { bg: string; text: string; border: string; gradient: string }> = {
@@ -57,6 +62,7 @@ const typeColors: Record<string, { bg: string; text: string; border: string; gra
   daily_wins: { bg: 'bg-green-50', text: 'text-green-600', border: 'border-green-200', gradient: 'from-green-50 to-white' },
   gratitude: { bg: 'bg-pink-50', text: 'text-pink-600', border: 'border-pink-200', gradient: 'from-pink-50 to-white' },
   open_ended: { bg: 'bg-purple-50', text: 'text-purple-600', border: 'border-purple-200', gradient: 'from-purple-50 to-white' },
+  i_know: { bg: 'bg-cyan-50', text: 'text-cyan-600', border: 'border-cyan-200', gradient: 'from-cyan-50 to-white' },
 }
 
 // Progress indicator
@@ -743,6 +749,218 @@ function OpenEndedFlow({
   )
 }
 
+// I Know Flow Component
+function IKnowFlow({
+  config,
+  onSave,
+  onCancel,
+  isSaving
+}: {
+  config: JournalConfig
+  onSave: (data: Record<string, unknown>) => void
+  onCancel: () => void
+  isSaving: boolean
+}) {
+  const [step, setStep] = useState(0)
+  const [statement, setStatement] = useState('')
+  const [whyMatters, setWhyMatters] = useState('')
+  const [feeling, setFeeling] = useState<string | null>(null)
+
+  const colors = typeColors.i_know
+
+  // Feelings options for I Know journal
+  const feelingOptions = [
+    { key: 'grounded', label: 'Grounded', emoji: '🌱' },
+    { key: 'calm', label: 'Calm', emoji: '😌' },
+    { key: 'reassured', label: 'Reassured', emoji: '🤗' },
+    { key: 'focused', label: 'Focused', emoji: '🎯' },
+    { key: 'supported', label: 'Supported', emoji: '🤝' },
+    { key: 'motivated', label: 'Motivated', emoji: '🔥' },
+    { key: 'neutral', label: 'Neutral', emoji: '😐' },
+  ]
+
+  // Example prompts for the statement
+  const examplePrompts = [
+    'I am capable of handling challenges',
+    'my effort matters more than the outcome',
+    'I have people who support me',
+    'I have overcome difficult things before',
+    'my worth is not defined by my performance',
+    'it\'s okay to ask for help',
+  ]
+
+  const handleNext = () => {
+    if (step < 2) setStep(step + 1)
+    else {
+      onSave({
+        journal_type: 'i_know',
+        i_know_statement: statement,
+        i_know_why_matters: whyMatters || null,
+        i_know_feeling: feeling,
+      })
+    }
+  }
+
+  const canProceed = () => {
+    if (step === 0) return statement.trim().length > 0
+    if (step === 2) return feeling !== null
+    return true
+  }
+
+  return (
+    <div className={`min-h-screen bg-gradient-to-b ${colors.gradient}`}>
+      <div className="max-w-lg mx-auto px-4 py-6">
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-6">
+          <button onClick={onCancel} className="p-2 hover:bg-white/50 rounded-lg">
+            <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <div className={`${colors.text}`}>{icons.lightbulb}</div>
+          <h1 className="text-xl font-bold text-gray-900">I Know...</h1>
+        </div>
+
+        <ProgressDots current={step} total={3} />
+
+        {/* Step 0: Statement Input */}
+        {step === 0 && (
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold text-gray-900 text-center mb-4">
+              What do you know to be true?
+            </h2>
+            <p className="text-sm text-gray-500 text-center mb-4">
+              Ground yourself in something you know, even when doubt creeps in.
+            </p>
+
+            {/* Input with I know... prefix */}
+            <div className={`p-4 rounded-xl border ${colors.border} bg-white`}>
+              <div className="flex items-start gap-2">
+                <span className={`font-medium ${colors.text} whitespace-nowrap pt-1`}>I know</span>
+                <textarea
+                  value={statement}
+                  onChange={(e) => setStatement(e.target.value)}
+                  placeholder="..."
+                  className="flex-1 resize-none focus:outline-none text-gray-900 min-h-[80px]"
+                  maxLength={500}
+                  autoFocus
+                />
+              </div>
+            </div>
+
+            {/* Example prompts */}
+            <div>
+              <p className="text-sm text-gray-500 mb-2">Need inspiration?</p>
+              <div className="flex flex-wrap gap-2">
+                {examplePrompts.map((prompt, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setStatement(prompt)}
+                    className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
+                      statement === prompt
+                        ? `${colors.bg} ${colors.text} ${colors.border}`
+                        : 'border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    {prompt}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Step 1: Why It Matters (Optional) */}
+        {step === 1 && (
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold text-gray-900 text-center mb-2">
+              Why does this matter to you?
+            </h2>
+            <p className="text-sm text-gray-500 text-center mb-4">(Optional)</p>
+            <textarea
+              value={whyMatters}
+              onChange={(e) => setWhyMatters(e.target.value)}
+              placeholder="This matters because..."
+              className="w-full p-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-300 resize-none h-32"
+              maxLength={500}
+            />
+
+            {/* Preview of statement */}
+            <div className={`mt-4 p-4 rounded-xl ${colors.bg} border ${colors.border}`}>
+              <p className={`${colors.text} font-medium`}>
+                I know {statement}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Step 2: Feeling Selection */}
+        {step === 2 && (
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold text-gray-900 text-center mb-2">
+              How does knowing this make you feel?
+            </h2>
+            <p className="text-sm text-gray-500 text-center mb-4">Select one</p>
+
+            <div className="grid grid-cols-4 gap-3">
+              {feelingOptions.map((option) => (
+                <button
+                  key={option.key}
+                  onClick={() => setFeeling(feeling === option.key ? null : option.key)}
+                  className={`flex flex-col items-center p-3 rounded-xl border-2 transition-all ${
+                    feeling === option.key
+                      ? `${colors.border} ${colors.bg} ring-2 ring-cyan-300`
+                      : 'border-gray-200 bg-white hover:border-gray-300'
+                  }`}
+                >
+                  <span className="text-2xl mb-1">{option.emoji}</span>
+                  <span className="text-xs text-gray-600">{option.label}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Preview */}
+            <div className={`mt-6 p-4 rounded-xl ${colors.bg} border ${colors.border}`}>
+              <p className={`${colors.text} font-medium mb-2`}>
+                I know {statement}
+              </p>
+              {whyMatters && (
+                <p className="text-sm text-gray-500 italic mb-2">{whyMatters}</p>
+              )}
+              {feeling && (
+                <span className="text-2xl">{feelingOptions.find(f => f.key === feeling)?.emoji}</span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Navigation */}
+        <div className="flex gap-3 mt-8">
+          {step > 0 && (
+            <button
+              onClick={() => setStep(step - 1)}
+              className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200"
+            >
+              Back
+            </button>
+          )}
+          <button
+            onClick={handleNext}
+            disabled={!canProceed() || isSaving}
+            className={`flex-1 py-3 rounded-xl font-medium transition-colors ${
+              canProceed() && !isSaving
+                ? 'bg-cyan-500 text-white hover:bg-cyan-600'
+                : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+            }`}
+          >
+            {isSaving ? 'Saving...' : step === 2 ? 'Save' : 'Next'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // User type for full user data
 interface FullUser {
   id: string
@@ -799,7 +1017,7 @@ function NewJournalEntryContent() {
 
     setIsSaving(true)
     try {
-      await apiPost('/journals/', {
+      await apiPost('/journals', {
         ...data,
         organization_id: fullUser.memberships[0].organization_id,
       })
@@ -871,6 +1089,15 @@ function NewJournalEntryContent() {
     case 'open_ended':
       return (
         <OpenEndedFlow
+          config={config}
+          onSave={handleSave}
+          onCancel={handleCancel}
+          isSaving={isSaving}
+        />
+      )
+    case 'i_know':
+      return (
+        <IKnowFlow
           config={config}
           onSave={handleSave}
           onCancel={handleCancel}

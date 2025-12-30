@@ -15,6 +15,7 @@ class JournalType(str, Enum):
     DAILY_WINS = "daily_wins"
     GRATITUDE = "gratitude"
     OPEN_ENDED = "open_ended"
+    I_KNOW = "i_know"
 
 
 class AffirmationFocusArea(str, Enum):
@@ -114,7 +115,7 @@ DAILY_WIN_FACTORS = [
     "Sticking with it",
 ]
 
-# How emotions felt (for wins and gratitude)
+# How emotions felt (for wins, gratitude, and i_know)
 EMOTION_OPTIONS = {
     "wins": [
         {"key": "proud", "label": "Proud", "emoji": "😊"},
@@ -130,6 +131,15 @@ EMOTION_OPTIONS = {
         {"key": "supported", "label": "Supported", "emoji": "🤝"},
         {"key": "joyful", "label": "Joyful", "emoji": "😊"},
         {"key": "relieved", "label": "Relieved", "emoji": "😮‍💨"},
+        {"key": "motivated", "label": "Motivated", "emoji": "🔥"},
+        {"key": "neutral", "label": "Neutral", "emoji": "😐"},
+    ],
+    "i_know": [
+        {"key": "grounded", "label": "Grounded", "emoji": "🌱"},
+        {"key": "calm", "label": "Calm", "emoji": "😌"},
+        {"key": "reassured", "label": "Reassured", "emoji": "🤗"},
+        {"key": "focused", "label": "Focused", "emoji": "🎯"},
+        {"key": "supported", "label": "Supported", "emoji": "🤝"},
         {"key": "motivated", "label": "Motivated", "emoji": "🔥"},
         {"key": "neutral", "label": "Neutral", "emoji": "😐"},
     ],
@@ -150,6 +160,16 @@ OPEN_ENDED_PROMPTS = [
     "What's taking up space in my head?",
     "What do I want to remember from today?",
     "What feels unclear today?",
+]
+
+# Prompts for "I Know..." journaling
+I_KNOW_PROMPTS = [
+    "I know I can handle pressure because...",
+    "I know my effort matters because...",
+    "I know I belong here because...",
+    "I know I can bounce back because...",
+    "I know my preparation is solid because...",
+    "I know I am improving because...",
 ]
 
 
@@ -209,6 +229,14 @@ class JournalEntry(Base):
     tags: Mapped[Optional[list]] = mapped_column(JSONB, nullable=True, default=list)
     # Prompt used (if any)
     prompt_used: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+
+    # === I Know Fields ===
+    # What do you know? (the statement)
+    i_know_statement: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    # Why does this matter?
+    i_know_why_matters: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    # How does this make you feel? (emotion key)
+    i_know_feeling: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
 
     # === Shared Fields ===
     # Word count (for open-ended)

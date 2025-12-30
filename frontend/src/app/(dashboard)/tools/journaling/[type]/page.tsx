@@ -24,6 +24,9 @@ interface JournalEntry {
   tags?: string[]
   prompt_used?: string
   word_count?: number
+  i_know_statement?: string
+  i_know_why_matters?: string
+  i_know_feeling?: string
 }
 
 interface JournalConfig {
@@ -36,6 +39,7 @@ interface JournalConfig {
   emotion_options: {
     wins: Array<{ key: string; label: string; emoji: string }>
     gratitude: Array<{ key: string; label: string; emoji: string }>
+    i_know: Array<{ key: string; label: string; emoji: string }>
   }
 }
 
@@ -73,6 +77,11 @@ const icons: Record<string, React.ReactNode> = {
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
     </svg>
   ),
+  lightbulb: (
+    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+    </svg>
+  ),
 }
 
 const typeColors: Record<string, { bg: string; text: string; border: string; gradient: string; button: string }> = {
@@ -80,6 +89,7 @@ const typeColors: Record<string, { bg: string; text: string; border: string; gra
   daily_wins: { bg: 'bg-green-50', text: 'text-green-600', border: 'border-green-200', gradient: 'from-green-50', button: 'bg-green-500 hover:bg-green-600' },
   gratitude: { bg: 'bg-pink-50', text: 'text-pink-600', border: 'border-pink-200', gradient: 'from-pink-50', button: 'bg-pink-500 hover:bg-pink-600' },
   open_ended: { bg: 'bg-purple-50', text: 'text-purple-600', border: 'border-purple-200', gradient: 'from-purple-50', button: 'bg-purple-500 hover:bg-purple-600' },
+  i_know: { bg: 'bg-cyan-50', text: 'text-cyan-600', border: 'border-cyan-200', gradient: 'from-cyan-50', button: 'bg-cyan-500 hover:bg-cyan-600' },
 }
 
 const typeIcons: Record<string, string> = {
@@ -87,6 +97,7 @@ const typeIcons: Record<string, string> = {
   daily_wins: 'trophy',
   gratitude: 'heart',
   open_ended: 'pencil',
+  i_know: 'lightbulb',
 }
 
 // Helper functions
@@ -229,9 +240,9 @@ function EntryCard({
 }) {
   const colors = typeColors[journalType] || typeColors.open_ended
 
-  const getEmoji = (feeling: string | undefined, type: 'wins' | 'gratitude') => {
+  const getEmoji = (feeling: string | undefined, type: 'wins' | 'gratitude' | 'i_know') => {
     if (!feeling || !config) return ''
-    const emotion = config.emotion_options[type].find(e => e.key === feeling)
+    const emotion = config.emotion_options[type]?.find(e => e.key === feeling)
     return emotion?.emoji || ''
   }
 
@@ -245,6 +256,8 @@ function EntryCard({
         return entry.gratitude_item || 'Gratitude'
       case 'open_ended':
         return entry.content?.slice(0, 100) || 'Journal entry'
+      case 'i_know':
+        return entry.i_know_statement || 'I know...'
       default:
         return 'Entry'
     }
@@ -258,7 +271,7 @@ function EntryCard({
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <p className="text-sm text-gray-900 line-clamp-2">
-            {journalType === 'affirmations' ? `"${getPreviewText()}"` : getPreviewText()}
+            {journalType === 'affirmations' ? `"${getPreviewText()}"` : journalType === 'i_know' ? `I know ${getPreviewText()}` : getPreviewText()}
           </p>
           <div className="flex items-center gap-2 mt-2">
             <span className="text-xs text-gray-400">
@@ -269,6 +282,9 @@ function EntryCard({
             )}
             {journalType === 'gratitude' && entry.gratitude_feeling && (
               <span className="text-sm">{getEmoji(entry.gratitude_feeling, 'gratitude')}</span>
+            )}
+            {journalType === 'i_know' && entry.i_know_feeling && (
+              <span className="text-sm">{getEmoji(entry.i_know_feeling, 'i_know')}</span>
             )}
           </div>
         </div>
@@ -298,9 +314,9 @@ function EntryDetailModal({
   const typeInfo = config?.journal_types.find(t => t.key === journalType)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
-  const getEmoji = (feeling: string | undefined, type: 'wins' | 'gratitude') => {
+  const getEmoji = (feeling: string | undefined, type: 'wins' | 'gratitude' | 'i_know') => {
     if (!feeling || !config) return ''
-    const emotion = config.emotion_options[type].find(e => e.key === feeling)
+    const emotion = config.emotion_options[type]?.find(e => e.key === feeling)
     return emotion?.emoji || ''
   }
 
@@ -437,6 +453,31 @@ function EntryDetailModal({
               )}
             </>
           )}
+
+          {/* I Know */}
+          {journalType === 'i_know' && (
+            <>
+              {entry.i_know_statement && (
+                <div className={`p-4 rounded-xl ${colors.bg} border ${colors.border}`}>
+                  <p className={`text-lg font-medium ${colors.text}`}>
+                    I know {entry.i_know_statement}
+                  </p>
+                </div>
+              )}
+              {entry.i_know_why_matters && (
+                <div>
+                  <p className="text-sm text-gray-500 mb-1">Why it matters</p>
+                  <p className="text-gray-900">{entry.i_know_why_matters}</p>
+                </div>
+              )}
+              {entry.i_know_feeling && (
+                <div>
+                  <p className="text-sm text-gray-500 mb-1">How this makes me feel</p>
+                  <p className="text-2xl">{getEmoji(entry.i_know_feeling, 'i_know')}</p>
+                </div>
+              )}
+            </>
+          )}
         </div>
 
         {/* Delete Button */}
@@ -543,7 +584,7 @@ export default function JournalTypePage() {
   }
 
   // Validate journal type
-  const validTypes = ['affirmations', 'daily_wins', 'gratitude', 'open_ended']
+  const validTypes = ['affirmations', 'daily_wins', 'gratitude', 'open_ended', 'i_know']
   if (!validTypes.includes(journalType)) {
     router.push('/tools/journaling')
     return null
@@ -628,6 +669,7 @@ export default function JournalTypePage() {
                     {journalType === 'daily_wins' && 'Celebrate your achievements, big or small'}
                     {journalType === 'gratitude' && 'Build appreciation and perspective'}
                     {journalType === 'open_ended' && 'Write freely about what\'s on your mind'}
+                    {journalType === 'i_know' && 'Anchor yourself with what you know to be true'}
                   </p>
                   <button
                     onClick={handleNewEntry}
@@ -675,6 +717,7 @@ export default function JournalTypePage() {
                 {journalType === 'daily_wins' && 'Reflect on what went well today.'}
                 {journalType === 'gratitude' && 'Take a moment to appreciate something in your life.'}
                 {journalType === 'open_ended' && 'Write whatever is on your mind.'}
+                {journalType === 'i_know' && 'Ground yourself in something you know to be true.'}
               </p>
               <button
                 onClick={handleNewEntry}
