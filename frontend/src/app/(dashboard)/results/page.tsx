@@ -2,9 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { Info } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { apiGet } from '@/lib/api'
 import { Button } from '@/components/ui/button'
+import { MPA_DEFINITIONS, MPADimension } from '@/lib/mpaDefinitions'
+import { DimensionInfoModal } from '@/components/ui/DimensionInfoModal'
 
 interface AssessmentResult {
   id: string
@@ -75,11 +78,13 @@ function PillarCard({
   score,
   isStrength,
   isGrowthArea,
+  onInfoClick,
 }: {
   pillar: string
   score: number
   isStrength: boolean
   isGrowthArea: boolean
+  onInfoClick: (key: string) => void
 }) {
   return (
     <div
@@ -92,7 +97,16 @@ function PillarCard({
       }`}
     >
       <div className="flex items-start justify-between mb-2">
-        <h3 className="font-medium text-gray-900">{PILLAR_DISPLAY_NAMES[pillar] || pillar}</h3>
+        <div className="flex items-center gap-1">
+          <h3 className="font-medium text-gray-900">{PILLAR_DISPLAY_NAMES[pillar] || pillar}</h3>
+          <button
+            onClick={() => onInfoClick(pillar)}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+            aria-label={`Learn more about ${PILLAR_DISPLAY_NAMES[pillar]}`}
+          >
+            <Info className="w-4 h-4" />
+          </button>
+        </div>
         {isStrength && (
           <span className="text-xs px-2 py-0.5 bg-green-200 text-green-800 rounded-full">
             Strength
@@ -218,6 +232,14 @@ export default function ResultsPage() {
   const [results, setResults] = useState<AssessmentResult | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [selectedDimension, setSelectedDimension] = useState<MPADimension | null>(null)
+
+  const handleInfoClick = (key: string) => {
+    const dimension = MPA_DEFINITIONS[key]
+    if (dimension) {
+      setSelectedDimension(dimension)
+    }
+  }
 
   useEffect(() => {
     const loadResults = async () => {
@@ -365,6 +387,7 @@ export default function ResultsPage() {
                 score={score}
                 isStrength={results.strengths.includes(pillar)}
                 isGrowthArea={results.growth_areas.includes(pillar)}
+                onInfoClick={handleInfoClick}
               />
             ))}
           </div>
@@ -381,6 +404,7 @@ export default function ResultsPage() {
                 score={score}
                 isStrength={results.strengths.includes(pillar)}
                 isGrowthArea={results.growth_areas.includes(pillar)}
+                onInfoClick={handleInfoClick}
               />
             ))}
           </div>
@@ -412,6 +436,13 @@ export default function ResultsPage() {
           </Button>
         </div>
       </main>
+
+      {/* Dimension Info Modal */}
+      <DimensionInfoModal
+        dimension={selectedDimension}
+        isOpen={!!selectedDimension}
+        onClose={() => setSelectedDimension(null)}
+      />
     </div>
   )
 }

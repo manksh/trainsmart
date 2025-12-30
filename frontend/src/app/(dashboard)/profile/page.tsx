@@ -2,8 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { Info } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { apiGet, apiDelete } from '@/lib/api'
+import { MPA_DEFINITIONS, MPADimension } from '@/lib/mpaDefinitions'
+import { DimensionInfoModal } from '@/components/ui/DimensionInfoModal'
 
 interface UserMembership {
   organization_id: string
@@ -157,7 +160,7 @@ function RadarChart({ scores }: { scores: Record<string, number> }) {
 }
 
 // Meta Scores (Thinking, Feeling, Acting)
-function MetaScoresCard({ scores }: { scores: { thinking: number; feeling: number; action: number } }) {
+function MetaScoresCard({ scores, onInfoClick }: { scores: { thinking: number; feeling: number; action: number }; onInfoClick: (key: string) => void }) {
   const maxScore = 7
 
   const getScoreColor = (score: number) => {
@@ -170,7 +173,7 @@ function MetaScoresCard({ scores }: { scores: { thinking: number; feeling: numbe
   const categories = [
     { key: 'thinking', label: 'Thinking', description: 'Mental clarity, focus & self-talk', icon: '🧠', score: scores.thinking },
     { key: 'feeling', label: 'Feeling', description: 'Emotional awareness & regulation', icon: '💚', score: scores.feeling },
-    { key: 'action', label: 'Acting', description: 'Behavioral habits & resilience', icon: '⚡', score: scores.action },
+    { key: 'acting', label: 'Acting', description: 'Behavioral habits & resilience', icon: '⚡', score: scores.action },
   ]
 
   return (
@@ -182,8 +185,17 @@ function MetaScoresCard({ scores }: { scores: { thinking: number; feeling: numbe
           <div key={cat.key} className={`${colors.bg} ${colors.border} border rounded-xl p-5`}>
             <div className="flex items-center gap-2 mb-2">
               <span className="text-2xl">{cat.icon}</span>
-              <div>
-                <h4 className="font-semibold text-gray-900">{cat.label}</h4>
+              <div className="flex-1">
+                <div className="flex items-center gap-1">
+                  <h4 className="font-semibold text-gray-900">{cat.label}</h4>
+                  <button
+                    onClick={() => onInfoClick(cat.key)}
+                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                    aria-label={`Learn more about ${cat.label}`}
+                  >
+                    <Info className="w-4 h-4" />
+                  </button>
+                </div>
                 <p className="text-xs text-gray-500">{cat.description}</p>
               </div>
             </div>
@@ -206,12 +218,20 @@ function MetaScoresCard({ scores }: { scores: { thinking: number; feeling: numbe
 
 function AssessmentResults({ results, onRedo }: { results: AssessmentResult; onRedo: () => void }) {
   const [showConfirm, setShowConfirm] = useState(false)
+  const [selectedDimension, setSelectedDimension] = useState<MPADimension | null>(null)
+
+  const handleInfoClick = (key: string) => {
+    const dimension = MPA_DEFINITIONS[key]
+    if (dimension) {
+      setSelectedDimension(dimension)
+    }
+  }
 
   return (
     <div className="space-y-6">
       {/* Meta Scores (Thinking, Feeling, Acting) */}
       {results.meta_scores && (
-        <MetaScoresCard scores={results.meta_scores} />
+        <MetaScoresCard scores={results.meta_scores} onInfoClick={handleInfoClick} />
       )}
 
       {/* Strengths and Growth Areas */}
@@ -229,7 +249,16 @@ function AssessmentResults({ results, onRedo }: { results: AssessmentResult; onR
           <ul className="space-y-2">
             {results.strengths.map((strength) => (
               <li key={strength} className="flex items-center justify-between">
-                <span className="text-gray-700">{PILLAR_DISPLAY_NAMES[strength]}</span>
+                <div className="flex items-center gap-1">
+                  <span className="text-gray-700">{PILLAR_DISPLAY_NAMES[strength]}</span>
+                  <button
+                    onClick={() => handleInfoClick(strength)}
+                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                    aria-label={`Learn more about ${PILLAR_DISPLAY_NAMES[strength]}`}
+                  >
+                    <Info className="w-3.5 h-3.5" />
+                  </button>
+                </div>
                 <span className="text-sm text-green-600 font-medium">
                   {(results.pillar_scores[strength] || 0).toFixed(1)}/7
                 </span>
@@ -251,7 +280,16 @@ function AssessmentResults({ results, onRedo }: { results: AssessmentResult; onR
           <ul className="space-y-2">
             {results.growth_areas.map((area) => (
               <li key={area} className="flex items-center justify-between">
-                <span className="text-gray-700">{PILLAR_DISPLAY_NAMES[area]}</span>
+                <div className="flex items-center gap-1">
+                  <span className="text-gray-700">{PILLAR_DISPLAY_NAMES[area]}</span>
+                  <button
+                    onClick={() => handleInfoClick(area)}
+                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                    aria-label={`Learn more about ${PILLAR_DISPLAY_NAMES[area]}`}
+                  >
+                    <Info className="w-3.5 h-3.5" />
+                  </button>
+                </div>
                 <span className="text-sm text-orange-600 font-medium">
                   {(results.pillar_scores[area] || 0).toFixed(1)}/7
                 </span>
@@ -280,9 +318,18 @@ function AssessmentResults({ results, onRedo }: { results: AssessmentResult; onR
               return (
                 <div key={pillar}>
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm text-gray-700">
-                      {PILLAR_DISPLAY_NAMES[pillar]}
-                    </span>
+                    <div className="flex items-center gap-1">
+                      <span className="text-sm text-gray-700">
+                        {PILLAR_DISPLAY_NAMES[pillar]}
+                      </span>
+                      <button
+                        onClick={() => handleInfoClick(pillar)}
+                        className="text-gray-400 hover:text-gray-600 transition-colors"
+                        aria-label={`Learn more about ${PILLAR_DISPLAY_NAMES[pillar]}`}
+                      >
+                        <Info className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                     {isStrength && (
                       <span className="text-xs px-1.5 py-0.5 bg-green-100 text-green-700 rounded">
                         Strength
@@ -343,6 +390,13 @@ function AssessmentResults({ results, onRedo }: { results: AssessmentResult; onR
           </div>
         </div>
       )}
+
+      {/* Dimension Info Modal */}
+      <DimensionInfoModal
+        dimension={selectedDimension}
+        isOpen={!!selectedDimension}
+        onClose={() => setSelectedDimension(null)}
+      />
     </div>
   )
 }
