@@ -1,13 +1,20 @@
 'use client'
 
-import { StaticCardContent, ScreenComponentProps } from '../types'
+import { StaticCardContent, ScreenComponentProps, ScreenResponse } from '../types'
 import { getModuleColors } from '@/lib/colors'
+import ContextDisplay from '../shared/ContextDisplay'
 
 interface StaticCardProps extends ScreenComponentProps {
   content: StaticCardContent
+  allScreenResponses?: Record<string, ScreenResponse>
 }
 
-export default function StaticCard({ content, onContinue, moduleColor }: StaticCardProps) {
+export default function StaticCard({
+  content,
+  onContinue,
+  moduleColor,
+  allScreenResponses,
+}: StaticCardProps) {
   const colors = getModuleColors(moduleColor)
 
   // Border color mapping for emphasis mode
@@ -24,6 +31,15 @@ export default function StaticCard({ content, onContinue, moduleColor }: StaticC
   return (
     <div className="flex flex-col min-h-[calc(100vh-180px)] px-4 py-8">
       <div className="flex-1 flex flex-col justify-center">
+        {/* Context display from previous screen response */}
+        {content.context_display && (
+          <ContextDisplay
+            config={content.context_display}
+            allScreenResponses={allScreenResponses}
+            moduleColor={moduleColor}
+          />
+        )}
+
         <div
           className={`rounded-2xl p-6 space-y-4 ${
             content.emphasis

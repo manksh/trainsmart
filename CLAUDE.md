@@ -158,6 +158,38 @@ Current implemented screen types:
 4. Add case to `ScreenRenderer.tsx`
 5. Create migration to seed content using new type
 
+### Screen ID Naming Convention
+
+**CRITICAL:** Screen IDs must be globally unique within a module to support cross-activity data access.
+
+**Format:** `a{activity_number}_s{screen_number}_{purpose}`
+
+**Examples:**
+- `a4_s3_goal_input` - Activity 4, Screen 3, goal input field
+- `a5_s7_action_items` - Activity 5, Screen 7, action items entry
+- `a4_s5_timeline` - Activity 4, Screen 5, timeline selection
+
+**Why this matters:**
+- Screen responses are stored in a flat `screen_responses` dictionary
+- Cross-activity references (e.g., Activity 5 displaying Activity 4's goals) use screen IDs
+- ID collisions cause data overwrites and incorrect displays
+
+**Cross-Activity Data Access:**
+Screens can reference data from other activities using `display_from_screens` or `context_display`:
+```typescript
+// In Activity 5, display the goal entered in Activity 4
+{
+  type: 'static_card',
+  content: {
+    body: 'Let\'s break down your goal into steps.',
+    context_display: {
+      from_screen: 'a4_s3_goal_input',
+      label: 'Your goal:'
+    }
+  }
+}
+```
+
 ## Database
 
 ### Environment Variables

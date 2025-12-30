@@ -15,6 +15,7 @@ import {
   MicroCommitmentContent,
   MicroCommitmentConfirmationContent,
   ActivityCompletionContent,
+  SummaryPlanContent,
   EmojiSelectContent,
   MultiSelectContent,
   TextInputContent,
@@ -44,6 +45,7 @@ import CategoryToggle from './CategoryToggle'
 import ConditionalContent from './ConditionalContent'
 import TapMatching from './TapMatching'
 import GuidedBreathing from './GuidedBreathing'
+import SummaryPlan from './SummaryPlan'
 
 interface ScreenRendererProps {
   screen: Screen
@@ -74,7 +76,13 @@ export default function ScreenRenderer({
       return <SwipeCard {...commonProps} content={screen.content as SwipeCardContent} />
 
     case 'static_card':
-      return <StaticCard {...commonProps} content={screen.content as StaticCardContent} />
+      return (
+        <StaticCard
+          {...commonProps}
+          content={screen.content as StaticCardContent}
+          allScreenResponses={allScreenResponses}
+        />
+      )
 
     case 'tap_reveal_list':
       return <TapRevealList {...commonProps} content={screen.content as TapRevealListContent} />
@@ -86,7 +94,13 @@ export default function ScreenRenderer({
       return <MultiSelect {...commonProps} content={screen.content as MultiSelectContent} />
 
     case 'text_input':
-      return <TextInput {...commonProps} content={screen.content as TextInputContent} />
+      return (
+        <TextInput
+          {...commonProps}
+          content={screen.content as TextInputContent}
+          allScreenResponses={allScreenResponses}
+        />
+      )
 
     case 'confirmation_display':
       return (
@@ -198,6 +212,15 @@ export default function ScreenRenderer({
         <GuidedBreathing
           {...commonProps}
           content={screen.content as GuidedBreathingContent}
+        />
+      )
+
+    case 'summary_plan':
+      return (
+        <SummaryPlan
+          {...commonProps}
+          content={screen.content as SummaryPlanContent}
+          allScreenResponses={allScreenResponses}
         />
       )
 

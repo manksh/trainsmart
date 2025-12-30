@@ -42,8 +42,11 @@ export default function MicroCommitment({
   }
 
   const handleContinue = () => {
-    if (selectedCommitment) {
-      const response: any = { commitment_id: selectedCommitment }
+    if (selectedCommitment && selectedOption) {
+      const response: any = {
+        commitment_id: selectedCommitment,
+        commitment_text: selectedOption.text,
+      }
       if (content.allow_custom_input && customInput.trim()) {
         response.custom_input = customInput.trim()
       }

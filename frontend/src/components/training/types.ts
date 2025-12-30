@@ -14,6 +14,11 @@ export interface StaticCardContent {
   subtext?: string
   follow_up?: string
   emphasis?: boolean
+  context_display?: {
+    from_screen: string
+    label?: string
+    style?: 'card' | 'inline' | 'quote'
+  }
 }
 
 // Tap reveal list - sequential tap-to-reveal items in a single column
@@ -58,6 +63,17 @@ export interface TextInputContent {
   placeholder?: string
   prefix?: string // e.g., "I know..."
   max_length?: number
+  context_display?: {
+    from_screen: string
+    label?: string
+    style?: 'card' | 'inline' | 'quote'
+  }
+  // For multi_text_input mode - allows entering multiple text entries
+  multiple?: {
+    min_entries: number
+    max_entries: number
+    entry_labels?: string[] // Optional labels for each entry (e.g., ["Step 1", "Step 2"])
+  }
 }
 
 // Confirmation display - shows user's previous responses
@@ -153,6 +169,17 @@ export interface ActivityCompletionContent {
   next_activity_hint?: string
 }
 
+// SummaryPlan - Read-only summary display of collected responses across screens
+export interface SummaryPlanContent {
+  title: string
+  sections: Array<{
+    label: string
+    display_from_screens: string[]
+    display_type?: 'list' | 'numbered' | 'cards'
+  }>
+  subtext?: string
+}
+
 // TapRevealCategories - Grouped tap-to-reveal with categories
 export interface TapRevealCategoriesContent {
   header?: string
@@ -229,6 +256,7 @@ export type ScreenType =
   | 'conditional_content'
   | 'tap_matching'
   | 'guided_breathing'
+  | 'summary_plan'
 
 export interface Screen {
   id: string
@@ -246,6 +274,7 @@ export interface Screen {
     | MicroCommitmentContent
     | MicroCommitmentConfirmationContent
     | ActivityCompletionContent
+    | SummaryPlanContent
     | EmojiSelectContent
     | MultiSelectContent
     | TextInputContent
@@ -274,8 +303,10 @@ export interface ScreenResponse {
   selection?: string
   selections?: string[]
   commitment_id?: string
+  commitment_text?: string // The actual text of the selected commitment
   revealed_items?: string[]
   text_input?: string
+  text_inputs?: string[] // For multiple text entries (multi_text_input mode)
   category_assignments?: Record<string, string> // item_id -> category_id
   matches?: Record<string, string> // item_id -> target_id (for TapMatching)
   breathing_completed?: boolean // for GuidedBreathing

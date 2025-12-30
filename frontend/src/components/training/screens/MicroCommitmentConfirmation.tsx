@@ -28,11 +28,14 @@ export default function MicroCommitmentConfirmation({
   const getCommitmentText = () => {
     if (!allScreenResponses) return 'your chosen commitment'
 
-    // Look for any screen response with a commitment_id
+    // Look for any screen response with a commitment_text or commitment_id
     for (const [screenId, response] of Object.entries(allScreenResponses)) {
+      // Prefer commitment_text if available (stores the actual text)
+      if (response.commitment_text) {
+        return response.commitment_text
+      }
+      // Fallback to formatting commitment_id (legacy behavior)
       if (response.commitment_id) {
-        // We found a commitment, but we need the text
-        // For now, just indicate they made a commitment
         return response.commitment_id.replace('mc_', '').replace(/_/g, ' ')
       }
     }
