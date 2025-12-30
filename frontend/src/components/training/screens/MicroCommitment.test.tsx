@@ -120,7 +120,10 @@ describe('MicroCommitment', () => {
       // Click continue
       fireEvent.click(screen.getByRole('button', { name: /continue/i }))
 
-      expect(mockOnSaveResponse).toHaveBeenCalledWith({ commitment_id: 'option1' })
+      expect(mockOnSaveResponse).toHaveBeenCalledWith({
+        commitment_id: 'option1',
+        commitment_text: 'Practice deep breathing',
+      })
       expect(mockOnContinue).toHaveBeenCalledTimes(1)
     })
   })
@@ -180,7 +183,10 @@ describe('MicroCommitment', () => {
       fireEvent.click(screen.getByRole('button', { name: /continue/i }))
 
       // Should save the new selection
-      expect(mockOnSaveResponse).toHaveBeenCalledWith({ commitment_id: 'option3' })
+      expect(mockOnSaveResponse).toHaveBeenCalledWith({
+        commitment_id: 'option3',
+        commitment_text: 'Journal for 5 minutes',
+      })
     })
   })
 
@@ -243,6 +249,7 @@ describe('MicroCommitment', () => {
 
       expect(mockOnSaveResponse).toHaveBeenCalledWith({
         commitment_id: 'feedback',
+        commitment_text: 'I will ask for feedback',
         custom_input: 'Ask coach after practice',
       })
     })
@@ -292,7 +299,10 @@ describe('MicroCommitment', () => {
       fireEvent.click(screen.getByRole('button', { name: /continue/i }))
 
       // Should NOT include custom_input since it's empty
-      expect(mockOnSaveResponse).toHaveBeenCalledWith({ commitment_id: 'feedback' })
+      expect(mockOnSaveResponse).toHaveBeenCalledWith({
+        commitment_id: 'feedback',
+        commitment_text: 'I will ask for feedback',
+      })
     })
   })
 
