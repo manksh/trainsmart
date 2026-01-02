@@ -311,7 +311,9 @@ function AssessmentResults({ results, onRedo }: { results: AssessmentResult; onR
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
           <h3 className="font-semibold text-gray-900 mb-4">All Scores</h3>
           <div className="space-y-3">
-            {CORE_PILLARS.map((pillar) => {
+            {CORE_PILLARS.slice().sort(
+              (a, b) => (results.pillar_scores[b] || 0) - (results.pillar_scores[a] || 0)
+            ).map((pillar) => {
               const score = results.pillar_scores[pillar] || 0
               const isStrength = results.strengths.includes(pillar)
               const isGrowth = results.growth_areas.includes(pillar)
