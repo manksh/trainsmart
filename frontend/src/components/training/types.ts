@@ -167,6 +167,8 @@ export interface ActivityCompletionContent {
   title: string
   message: string
   next_activity_hint?: string
+  exploration_summary?: boolean // If true, show "You explored X of Y" based on exploration_screen_id
+  exploration_screen_id?: string // Screen ID to get exploration count from (for emoji_grid screens)
 }
 
 // SummaryPlan - Read-only summary display of collected responses across screens
@@ -233,6 +235,25 @@ export interface GuidedBreathingContent {
   audio_enabled?: boolean
 }
 
+// EmojiGrid - Grid of emotions with tap-to-explore modal details
+export interface EmojiGridContent {
+  prompt: string
+  core_required_message?: string
+  emotions: Array<{
+    id: string
+    emoji: string
+    label: string
+    is_core: boolean
+    detail: {
+      description: string
+      body_feelings?: string[]
+      similar_feelings?: string[]
+      when_helpful?: string[]
+      when_challenging?: string[]
+    }
+  }>
+}
+
 // Union type for all screen types
 export type ScreenType =
   | 'swipe_card'
@@ -249,6 +270,7 @@ export type ScreenType =
   | 'micro_commitment_confirmation'
   | 'activity_completion'
   | 'emoji_select'
+  | 'emoji_grid'
   | 'multi_select'
   | 'text_input'
   | 'confirmation_display'
@@ -276,6 +298,7 @@ export interface Screen {
     | ActivityCompletionContent
     | SummaryPlanContent
     | EmojiSelectContent
+    | EmojiGridContent
     | MultiSelectContent
     | TextInputContent
     | ConfirmationDisplayContent
@@ -312,6 +335,7 @@ export interface ScreenResponse {
   breathing_completed?: boolean // for GuidedBreathing
   cycles_completed?: number // for GuidedBreathing
   breathing_skipped?: boolean // for GuidedBreathing
+  emotions_explored?: string[] // for EmojiGrid - list of emotion IDs that were viewed
 }
 
 export interface SequentialProgressData {

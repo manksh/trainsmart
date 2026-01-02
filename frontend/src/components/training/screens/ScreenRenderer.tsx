@@ -17,6 +17,7 @@ import {
   ActivityCompletionContent,
   SummaryPlanContent,
   EmojiSelectContent,
+  EmojiGridContent,
   MultiSelectContent,
   TextInputContent,
   ConfirmationDisplayContent,
@@ -46,6 +47,7 @@ import ConditionalContent from './ConditionalContent'
 import TapMatching from './TapMatching'
 import GuidedBreathing from './GuidedBreathing'
 import SummaryPlan from './SummaryPlan'
+import EmojiGrid from './EmojiGrid'
 
 interface ScreenRendererProps {
   screen: Screen
@@ -89,6 +91,9 @@ export default function ScreenRenderer({
 
     case 'emoji_select':
       return <EmojiSelect {...commonProps} content={screen.content as EmojiSelectContent} />
+
+    case 'emoji_grid':
+      return <EmojiGrid {...commonProps} content={screen.content as EmojiGridContent} />
 
     case 'multi_select':
       return <MultiSelect {...commonProps} content={screen.content as MultiSelectContent} />

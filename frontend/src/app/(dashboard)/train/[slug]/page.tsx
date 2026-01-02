@@ -137,6 +137,18 @@ const colorClasses: Record<string, { bg: string; bgLight: string; text: string; 
     text: 'text-amber-600',
     border: 'border-amber-200',
   },
+  cyan: {
+    bg: 'bg-cyan-600',
+    bgLight: 'bg-cyan-50',
+    text: 'text-cyan-600',
+    border: 'border-cyan-200',
+  },
+  rose: {
+    bg: 'bg-rose-600',
+    bgLight: 'bg-rose-50',
+    text: 'text-rose-600',
+    border: 'border-rose-200',
+  },
 }
 
 export default function ModuleOverviewPage() {
