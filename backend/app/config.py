@@ -21,10 +21,10 @@ class Settings(BaseSettings):
 
     # Email (Resend)
     resend_api_key: Optional[str] = None
-    from_email: str = "noreply@trainsmart.app"
+    from_email: str = "noreply@ctlstlabs.com"
 
     # App
-    app_name: str = "TrainSmart"
+    app_name: str = "CTLST Labs"
     api_v1_prefix: str = "/api/v1"
 
     @property

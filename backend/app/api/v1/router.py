@@ -17,4 +17,4 @@ api_router.include_router(training_modules.router, prefix="/training-modules", t
 
 @api_router.get("/")
 async def root():
-    return {"message": "TrainSmart API v1"}
+    return {"message": "CTLST Labs API v1"}

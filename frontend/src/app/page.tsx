@@ -5,7 +5,7 @@ export default function Home() {
     <main className="min-h-screen flex flex-col items-center justify-center p-8">
       <div className="max-w-2xl text-center">
         <h1 className="text-5xl font-bold text-primary-600 mb-4">
-          TrainSmart
+          CTLST Labs
         </h1>
         <p className="text-xl text-gray-600 mb-8">
           Mental performance training for athletes

@@ -96,7 +96,7 @@ export function TopNav() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
               </div>
-              <span className="font-semibold text-gray-900 hidden sm:block">TrainSmart</span>
+              <span className="font-semibold text-gray-900 hidden sm:block">CTLST Labs</span>
             </button>
           </div>
 

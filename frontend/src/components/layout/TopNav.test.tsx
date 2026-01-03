@@ -59,7 +59,7 @@ describe('TopNav', () => {
     render(<TopNav />)
 
     await waitFor(() => {
-      expect(screen.getByText('TrainSmart')).toBeInTheDocument()
+      expect(screen.getByText('CTLST Labs')).toBeInTheDocument()
     })
   })
 
@@ -67,10 +67,10 @@ describe('TopNav', () => {
     render(<TopNav />)
 
     await waitFor(() => {
-      expect(screen.getByText('TrainSmart')).toBeInTheDocument()
+      expect(screen.getByText('CTLST Labs')).toBeInTheDocument()
     })
 
-    const logoButton = screen.getByText('TrainSmart').closest('button')
+    const logoButton = screen.getByText('CTLST Labs').closest('button')
     fireEvent.click(logoButton!)
 
     expect(mockPush).toHaveBeenCalledWith('/athlete')

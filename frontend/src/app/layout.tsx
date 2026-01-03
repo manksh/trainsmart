@@ -6,7 +6,7 @@ import { Providers } from './providers'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'TrainSmart - Mental Performance Training',
+  title: 'CTLST Labs - Mental Performance Training',
   description: 'Mental performance training application for athletes',
 }
 
