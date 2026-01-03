@@ -38,6 +38,11 @@ from app.schemas.assessment import (
     AssessmentResultOut,
     AssessmentStatusOut,
 )
+from app.schemas.coaching import (
+    CoachingTipOut,
+    PillarTipsOut,
+    CoachingTipsResponse,
+)
 
 __all__ = [
     # User
@@ -75,4 +80,8 @@ __all__ = [
     "AssessmentSubmission",
     "AssessmentResultOut",
     "AssessmentStatusOut",
+    # Coaching
+    "CoachingTipOut",
+    "PillarTipsOut",
+    "CoachingTipsResponse",
 ]

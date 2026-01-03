@@ -7,6 +7,16 @@ import { apiGet, apiPost } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
+import { CoachingTipPanel, CoachingTipsInline } from '@/components/admin/coaching-tips'
+import { useIsLarge } from '@/hooks/useMediaQuery'
+import {
+  CORE_PILLAR_KEYS,
+  PILLAR_DISPLAY_NAMES,
+  META_CATEGORIES,
+  type MetaCategoryKey,
+  type PillarKey,
+} from '@/lib/mpaDefinitions'
+import { PillarTooltip } from '@/components/ui/PillarTooltip'
 
 interface Athlete {
   id: string
@@ -22,39 +32,13 @@ interface Athlete {
   growth_areas: string[] | null
 }
 
-const PILLAR_DISPLAY_NAMES: Record<string, string> = {
-  mindfulness: 'Mindfulness',
-  confidence: 'Confidence',
-  motivation: 'Motivation',
-  attentional_focus: 'Attentional Focus',
-  arousal_control: 'Arousal Control',
-  resilience: 'Resilience',
-  knowledge: 'Knowledge',
-  self_awareness: 'Self-Awareness',
-  wellness: 'Wellness',
-  deliberate_practice: 'Deliberate Practice',
-}
-
-const CORE_PILLARS = ['mindfulness', 'confidence', 'motivation', 'attentional_focus', 'arousal_control', 'resilience']
-
-const META_DISPLAY_NAMES: Record<string, string> = {
-  thinking: 'Thinking',
-  feeling: 'Feeling',
-  action: 'Action',
-}
-
-const META_COLORS: Record<string, { bg: string; text: string }> = {
-  thinking: { bg: 'bg-blue-100', text: 'text-blue-700' },
-  feeling: { bg: 'bg-pink-100', text: 'text-pink-700' },
-  action: { bg: 'bg-green-100', text: 'text-green-700' },
-}
-
 function MetaScoreBadge({ category, score }: { category: string; score: number }) {
-  const colors = META_COLORS[category] || { bg: 'bg-gray-100', text: 'text-gray-700' }
+  const meta = META_CATEGORIES[category as MetaCategoryKey]
+  const colors = meta || { bg: 'bg-gray-100', text: 'text-gray-700', name: category }
   return (
     <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-md ${colors.bg}`}>
       <span className={`text-xs font-medium ${colors.text}`}>
-        {META_DISPLAY_NAMES[category] || category}
+        {meta?.name || category}
       </span>
       <span className={`text-xs font-bold ${colors.text}`}>
         {score.toFixed(1)}
@@ -94,6 +78,7 @@ interface Invite {
 export default function AdminDashboard() {
   const router = useRouter()
   const { user, isLoading, logout } = useAuth()
+  const isDesktop = useIsLarge() // 1024px breakpoint
   const [athletes, setAthletes] = useState<Athlete[]>([])
   const [invites, setInvites] = useState<Invite[]>([])
   const [isLoadingData, setIsLoadingData] = useState(true)
@@ -108,6 +93,40 @@ export default function AdminDashboard() {
 
   // Expanded athlete rows
   const [expandedAthletes, setExpandedAthletes] = useState<Set<string>>(new Set())
+
+  // Coaching tips panel (desktop)
+  const [tipsPanelOpen, setTipsPanelOpen] = useState(false)
+  const [selectedAthleteForTips, setSelectedAthleteForTips] = useState<Athlete | null>(null)
+
+  // Inline coaching tips expansion (mobile)
+  const [inlineTipsExpanded, setInlineTipsExpanded] = useState<Set<string>>(new Set())
+
+  const handleViewTips = (athlete: Athlete) => {
+    if (isDesktop) {
+      // Desktop: open side panel
+      setSelectedAthleteForTips(athlete)
+      setTipsPanelOpen(true)
+    } else {
+      // Mobile: toggle inline expansion
+      toggleInlineTips(athlete.id)
+    }
+  }
+
+  const handleCloseTipsPanel = () => {
+    setTipsPanelOpen(false)
+  }
+
+  const toggleInlineTips = (athleteId: string) => {
+    setInlineTipsExpanded((prev) => {
+      const next = new Set(prev)
+      if (next.has(athleteId)) {
+        next.delete(athleteId)
+      } else {
+        next.add(athleteId)
+      }
+      return next
+    })
+  }
 
   const toggleExpanded = (athleteId: string) => {
     setExpandedAthletes((prev) => {
@@ -395,17 +414,18 @@ export default function AdminDashboard() {
                         {isExpanded && athlete.pillar_scores && (
                           <tr className="bg-gray-50">
                             <td colSpan={5} className="px-6 py-4">
-                              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                {CORE_PILLARS.map((pillar) => {
+                              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+                                {CORE_PILLAR_KEYS.map((pillar) => {
                                   const score = athlete.pillar_scores?.[pillar] || 0
                                   const isStrength = athlete.strengths?.includes(pillar)
                                   const isGrowth = athlete.growth_areas?.includes(pillar)
                                   return (
                                     <div key={pillar} className="space-y-1">
                                       <div className="flex items-center gap-2">
-                                        <span className="text-sm font-medium text-gray-700">
-                                          {PILLAR_DISPLAY_NAMES[pillar]}
-                                        </span>
+                                        <PillarTooltip
+                                          pillar={pillar as PillarKey}
+                                          className="text-sm font-medium text-gray-700"
+                                        />
                                         {isStrength && (
                                           <span className="text-xs px-1.5 py-0.5 bg-green-100 text-green-700 rounded">
                                             Strength
@@ -422,6 +442,28 @@ export default function AdminDashboard() {
                                   )
                                 })}
                               </div>
+                              {/* View Tips button - Desktop only */}
+                              {isDesktop && (
+                                <div className="pt-2 border-t border-gray-200">
+                                  <button
+                                    onClick={() => handleViewTips(athlete)}
+                                    className="text-sm font-medium text-sage-700 underline underline-offset-2 hover:text-sage-800 transition-colors"
+                                  >
+                                    View Coaching Tips
+                                  </button>
+                                </div>
+                              )}
+
+                              {/* Inline coaching tips - Mobile only */}
+                              {!isDesktop && (
+                                <div className="mt-4 -mx-6 -mb-4">
+                                  <CoachingTipsInline
+                                    athlete={athlete}
+                                    isExpanded={inlineTipsExpanded.has(athlete.id)}
+                                    onToggle={() => toggleInlineTips(athlete.id)}
+                                  />
+                                </div>
+                              )}
                             </td>
                           </tr>
                         )}
@@ -434,6 +476,13 @@ export default function AdminDashboard() {
           )}
         </div>
       </main>
+
+      {/* Coaching Tips Panel */}
+      <CoachingTipPanel
+        isOpen={tipsPanelOpen}
+        onClose={handleCloseTipsPanel}
+        athlete={selectedAthleteForTips}
+      />
     </div>
   )
 }

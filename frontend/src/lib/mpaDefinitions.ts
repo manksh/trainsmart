@@ -207,6 +207,75 @@ export const MPA_DEFINITIONS: Record<string, MPADimension> = {
   },
 }
 
+// === PILLAR KEY ARRAYS ===
+
+/** Core competency pillars (6 pillars) */
+export const CORE_PILLAR_KEYS = [
+  'mindfulness',
+  'confidence',
+  'motivation',
+  'attentional_focus',
+  'arousal_control',
+  'resilience',
+] as const
+
+/** Supporting attribute pillars (4 pillars) */
+export const SUPPORTING_PILLAR_KEYS = [
+  'knowledge',
+  'self_awareness',
+  'wellness',
+  'deliberate_practice',
+] as const
+
+/** All pillar keys (core + supporting) */
+export const ALL_PILLAR_KEYS = [
+  ...CORE_PILLAR_KEYS,
+  ...SUPPORTING_PILLAR_KEYS,
+] as const
+
+/** Type for core pillar keys */
+export type CorePillarKey = (typeof CORE_PILLAR_KEYS)[number]
+
+/** Type for supporting pillar keys */
+export type SupportingPillarKey = (typeof SUPPORTING_PILLAR_KEYS)[number]
+
+/** Type for all pillar keys */
+export type PillarKey = (typeof ALL_PILLAR_KEYS)[number]
+
+// === DISPLAY NAMES ===
+
+/** Human-readable names for each pillar */
+export const PILLAR_DISPLAY_NAMES: Record<PillarKey, string> = {
+  mindfulness: 'Mindfulness',
+  confidence: 'Confidence',
+  motivation: 'Motivation',
+  attentional_focus: 'Attentional Focus',
+  arousal_control: 'Arousal Control',
+  resilience: 'Resilience',
+  knowledge: 'Knowledge',
+  self_awareness: 'Self-Awareness',
+  wellness: 'Wellness',
+  deliberate_practice: 'Deliberate Practice',
+}
+
+// === META CATEGORIES ===
+
+/** Meta score category keys */
+export const META_CATEGORY_KEYS = ['thinking', 'feeling', 'action'] as const
+
+/** Type for meta category keys */
+export type MetaCategoryKey = (typeof META_CATEGORY_KEYS)[number]
+
+/** Meta category display configuration */
+export const META_CATEGORIES: Record<
+  MetaCategoryKey,
+  { name: string; bg: string; text: string }
+> = {
+  thinking: { name: 'Thinking', bg: 'bg-blue-100', text: 'text-blue-700' },
+  feeling: { name: 'Feeling', bg: 'bg-pink-100', text: 'text-pink-700' },
+  action: { name: 'Action', bg: 'bg-green-100', text: 'text-green-700' },
+}
+
 // Helper to get category display name
 export function getCategoryDisplayName(category: MPADimension['category']): string {
   switch (category) {

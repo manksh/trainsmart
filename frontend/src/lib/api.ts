@@ -6,6 +6,8 @@ interface ApiOptions {
   method?: RequestMethod
   body?: unknown
   headers?: Record<string, string>
+  /** Cache policy for the fetch request. Defaults to 'no-store' for fresh data. */
+  cachePolicy?: RequestCache
 }
 
 class ApiError extends Error {
@@ -28,7 +30,7 @@ export async function api<T>(
   endpoint: string,
   options: ApiOptions = {}
 ): Promise<T> {
-  const { method = 'GET', body, headers = {} } = options
+  const { method = 'GET', body, headers = {}, cachePolicy = 'no-store' } = options
 
   const token = await getToken()
   const requestHeaders: Record<string, string> = {
@@ -44,7 +46,7 @@ export async function api<T>(
     method,
     headers: requestHeaders,
     body: body ? JSON.stringify(body) : undefined,
-    cache: 'no-store', // Disable caching to always get fresh data
+    cache: cachePolicy,
   })
 
   if (!response.ok) {
@@ -57,6 +59,13 @@ export async function api<T>(
 
 // Convenience methods
 export const apiGet = <T>(endpoint: string) => api<T>(endpoint, { method: 'GET' })
+
+/**
+ * GET request with browser default caching enabled.
+ * Use for data that doesn't change frequently (e.g., coaching tips, static content).
+ */
+export const apiGetCached = <T>(endpoint: string) =>
+  api<T>(endpoint, { method: 'GET', cachePolicy: 'default' })
 
 export const apiPost = <T>(endpoint: string, body: unknown) =>
   api<T>(endpoint, { method: 'POST', body })
