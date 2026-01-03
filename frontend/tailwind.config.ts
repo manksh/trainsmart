@@ -44,6 +44,18 @@ const config: Config = {
           900: '#701a75',
           950: '#4a044e',
         },
+        sage: {
+          50: '#f0f4e8',
+          100: '#e4ebe0',
+          200: '#c9d7c1',
+          300: '#a8bda0',
+          400: '#7a9b8e',
+          500: '#5d8273',
+          600: '#4a6b5c',
+          700: '#3d4f4a',
+          800: '#2f3d39',
+          900: '#242e2b',
+        },
         destructive: {
           DEFAULT: 'hsl(var(--destructive))',
           foreground: 'hsl(var(--destructive-foreground))',

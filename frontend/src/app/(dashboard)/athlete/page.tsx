@@ -7,6 +7,7 @@ import { apiGet, apiDelete } from '@/lib/api'
 import { ExpandableSection, GroupedExpandableSection, ExpandableSectionOption } from '@/components/ui/ExpandableSection'
 import { ErrorBoundary, CardErrorFallback } from '@/components/error'
 import { useAsyncData } from '@/hooks/useAsyncData'
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 
 interface UserMembership {
   organization_id: string
@@ -317,7 +318,7 @@ function WeeklyActivityTracker() {
       <div className="flex justify-between gap-1 sm:gap-2">
         {days.map((day) => (
           <div key={day.date} className="flex flex-col items-center gap-2">
-            <span className={`text-xs font-medium ${day.is_today ? 'text-blue-600' : 'text-gray-500'}`}>
+            <span className={`text-xs font-medium ${day.is_today ? 'text-sage-700' : 'text-gray-500'}`}>
               {day.day_name}
             </span>
             <div
@@ -325,7 +326,7 @@ function WeeklyActivityTracker() {
                 day.has_activity
                   ? 'bg-green-100 text-green-600'
                   : day.is_today
-                    ? 'bg-blue-100 text-blue-600 ring-2 ring-blue-600 ring-offset-2'
+                    ? 'bg-sage-100 text-sage-700 ring-2 ring-sage-700 ring-offset-2'
                     : day.is_past
                       ? 'bg-gray-100 text-gray-400'
                       : 'bg-gray-50 text-gray-300'
@@ -520,7 +521,7 @@ function CheckInHistory() {
       {history.total > 3 && (
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="w-full mt-3 py-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
+          className="w-full mt-3 py-2 text-sm text-sage-700 hover:text-sage-800 font-medium"
         >
           {isExpanded ? 'Show less' : `Show ${Math.min(history.total - 3, 7)} more`}
         </button>
@@ -555,7 +556,7 @@ function MentalPerformanceScores({ scores, onViewProfile }: {
         <h3 className="font-semibold text-gray-900">Mental Performance</h3>
         <button
           onClick={onViewProfile}
-          className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+          className="text-sm text-sage-700 hover:text-sage-800 font-medium"
         >
           View Full Profile
         </button>
@@ -592,10 +593,10 @@ function MentalPerformanceScores({ scores, onViewProfile }: {
 // === Assessment Prompt ===
 function AssessmentPrompt({ onStart }: { onStart: () => void }) {
   return (
-    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-5">
+    <div className="bg-gradient-to-r from-sage-50 to-sage-100 rounded-xl border border-sage-200 p-5">
       <div className="flex items-start gap-4">
-        <div className="bg-blue-100 p-3 rounded-xl">
-          <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="bg-sage-100 p-3 rounded-xl">
+          <svg className="w-6 h-6 text-sage-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
           </svg>
         </div>
@@ -608,7 +609,7 @@ function AssessmentPrompt({ onStart }: { onStart: () => void }) {
           </p>
           <button
             onClick={onStart}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+            className="bg-sage-700 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-sage-800 transition-colors"
           >
             Start Assessment
           </button>
@@ -696,7 +697,7 @@ export default function HomePage() {
   if (isLoading || isLoadingData) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <LoadingSpinner />
       </div>
     )
   }
@@ -740,8 +741,8 @@ export default function HomePage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           }
-          color="text-blue-600"
-          bgColor="bg-blue-100"
+          color="text-sage-700"
+          bgColor="bg-sage-100"
           options={CHECK_IN_OPTIONS as ExpandableSectionOption[]}
           isExpanded={checkInsExpanded}
           onToggle={() => {
@@ -759,8 +760,8 @@ export default function HomePage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
           }
-          color="text-indigo-600"
-          bgColor="bg-indigo-100"
+          color="text-sage-700"
+          bgColor="bg-sage-100"
           groups={[
             { title: 'Tools', options: TOOL_OPTIONS as ExpandableSectionOption[] },
             { title: 'Modules', options: trainingModules as ExpandableSectionOption[] },

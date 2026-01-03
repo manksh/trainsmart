@@ -208,14 +208,14 @@ export default function MoodCheckInPage() {
 
   if (authLoading || isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-blue-50 to-white">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-pink-50 to-white">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600"></div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+    <div className="min-h-screen bg-gradient-to-b from-pink-50 to-white">
       <div className="max-w-lg mx-auto px-4 py-8">
         {/* Back button */}
         {step !== 'complete' && step !== 'overview' && (
@@ -250,7 +250,7 @@ export default function MoodCheckInPage() {
                   key={s}
                   className={`w-8 h-2 rounded-full ${
                     ['emotion', 'signal', 'intensity', 'body', 'action', 'commit'].indexOf(step) >= i
-                      ? 'bg-blue-600'
+                      ? 'bg-pink-600'
                       : 'bg-gray-200'
                   }`}
                 />
@@ -407,8 +407,8 @@ export default function MoodCheckInPage() {
         {step === 'education' && (
           <div className="animate-fadeIn">
             <div className="text-center mb-8">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-16 h-16 bg-pink-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                 </svg>
               </div>
@@ -479,8 +479,8 @@ export default function MoodCheckInPage() {
         {/* Step: Intro */}
         {step === 'intro' && (
           <div className="text-center py-12 animate-fadeIn">
-            <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <svg className="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-20 h-20 bg-pink-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <svg className="w-10 h-10 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
               </svg>
             </div>
@@ -514,7 +514,7 @@ export default function MoodCheckInPage() {
                   onClick={() => setSelectedEmotion(emotion.key)}
                   className={`p-4 rounded-xl border-2 transition-all ${
                     selectedEmotion === emotion.key
-                      ? 'border-blue-600 bg-blue-50'
+                      ? 'border-pink-600 bg-pink-50'
                       : 'border-gray-200 hover:border-gray-300 bg-white'
                   }`}
                 >
@@ -561,13 +561,13 @@ export default function MoodCheckInPage() {
                   onClick={() => setSelectedSignal(signal)}
                   className={`w-full p-4 rounded-lg border-2 text-left transition-all ${
                     selectedSignal === signal
-                      ? 'border-blue-600 bg-blue-50'
+                      ? 'border-pink-600 bg-pink-50'
                       : 'border-gray-200 hover:border-gray-300 bg-white'
                   }`}
                 >
                   <div className="flex items-center gap-3">
                     <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                      selectedSignal === signal ? 'border-blue-600 bg-blue-600' : 'border-gray-300'
+                      selectedSignal === signal ? 'border-pink-600 bg-pink-600' : 'border-gray-300'
                     }`}>
                       {selectedSignal === signal && (
                         <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -610,7 +610,7 @@ export default function MoodCheckInPage() {
                     onClick={() => setIntensity(item.value)}
                     className={`w-12 h-12 rounded-full font-bold text-lg transition-all ${
                       intensity === item.value
-                        ? 'bg-blue-600 text-white scale-110'
+                        ? 'bg-pink-600 text-white scale-110'
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
                   >
@@ -661,13 +661,13 @@ export default function MoodCheckInPage() {
                   }}
                   className={`p-4 rounded-lg border-2 transition-all ${
                     selectedBodyAreas.includes(area.key)
-                      ? 'border-blue-600 bg-blue-50'
+                      ? 'border-pink-600 bg-pink-50'
                       : 'border-gray-200 hover:border-gray-300 bg-white'
                   }`}
                 >
                   <div className="flex items-center gap-2">
                     <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                      selectedBodyAreas.includes(area.key) ? 'border-blue-600 bg-blue-600' : 'border-gray-300'
+                      selectedBodyAreas.includes(area.key) ? 'border-pink-600 bg-pink-600' : 'border-gray-300'
                     }`}>
                       {selectedBodyAreas.includes(area.key) && (
                         <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -711,13 +711,13 @@ export default function MoodCheckInPage() {
                   onClick={() => setSelectedAction(action)}
                   className={`w-full p-4 rounded-lg border-2 text-left transition-all ${
                     selectedAction === action
-                      ? 'border-blue-600 bg-blue-50'
+                      ? 'border-pink-600 bg-pink-50'
                       : 'border-gray-200 hover:border-gray-300 bg-white'
                   }`}
                 >
                   <div className="flex items-center gap-3">
                     <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                      selectedAction === action ? 'border-blue-600 bg-blue-600' : 'border-gray-300'
+                      selectedAction === action ? 'border-pink-600 bg-pink-600' : 'border-gray-300'
                     }`}>
                       {selectedAction === action && (
                         <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -783,7 +783,7 @@ export default function MoodCheckInPage() {
               {selectedAction && (
                 <div className="pt-4 border-t">
                   <span className="text-gray-500 block mb-2">Your commitment:</span>
-                  <span className="font-medium text-blue-600">{selectedAction}</span>
+                  <span className="font-medium text-pink-600">{selectedAction}</span>
                 </div>
               )}
             </div>

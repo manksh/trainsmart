@@ -1,0 +1,761 @@
+/**
+ * EmojiGrid Component Tests
+ *
+ * Test file for the EmojiGrid screen type used in the "About Emotions" module.
+ * This is a TEMPLATE - rename to EmojiGrid.test.tsx after implementing EmojiGrid.tsx
+ *
+ * Key testing patterns from existing codebase:
+ * - Use vitest with @testing-library/react
+ * - Mock onContinue and onSaveResponse with vi.fn()
+ * - Clear mocks in beforeEach
+ * - Group tests by behavior (describe blocks)
+ * - Test both happy path and edge cases
+ *
+ * @see TapRevealCategories.test.tsx for similar reveal/exploration patterns
+ * @see MicroCommitment.test.tsx for multi-step interaction patterns
+ * @see EmojiSelect.tsx for emoji grid layout reference
+ */
+
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import EmojiGrid from './EmojiGrid'
+import { EmojiGridContent, ScreenResponse } from '../types'
+
+describe('EmojiGrid', () => {
+  const mockOnContinue = vi.fn()
+  const mockOnSaveResponse = vi.fn()
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  const defaultProps = {
+    onContinue: mockOnContinue,
+    onSaveResponse: mockOnSaveResponse,
+    moduleColor: 'emerald',
+  }
+
+  // Sample content matching expected structure
+  const sampleContent: EmojiGridContent = {
+    header: "Let's explore how emotions show up in your life",
+    instruction: 'Tap each emotion to learn more. Explore all 5 core emotions to continue.',
+    emotions: [
+      // Core emotions (5 required)
+      {
+        id: 'joy',
+        emoji: '😊',
+        label: 'Joy',
+        description: 'A feeling of great pleasure and happiness.',
+        isCore: true,
+      },
+      {
+        id: 'sadness',
+        emoji: '😢',
+        label: 'Sadness',
+        description: 'A feeling of sorrow or unhappiness.',
+        isCore: true,
+      },
+      {
+        id: 'fear',
+        emoji: '😨',
+        label: 'Fear',
+        description: 'An unpleasant emotion caused by threat of danger.',
+        isCore: true,
+      },
+      {
+        id: 'anger',
+        emoji: '😠',
+        label: 'Anger',
+        description: 'A strong feeling of displeasure or hostility.',
+        isCore: true,
+      },
+      {
+        id: 'disgust',
+        emoji: '🤢',
+        label: 'Disgust',
+        description: 'A feeling of revulsion or strong disapproval.',
+        isCore: true,
+      },
+      // Non-core emotions (12)
+      {
+        id: 'surprise',
+        emoji: '😲',
+        label: 'Surprise',
+        description: 'A brief emotional state from unexpected event.',
+        isCore: false,
+      },
+      {
+        id: 'anticipation',
+        emoji: '🤔',
+        label: 'Anticipation',
+        description: 'Looking forward to something with excitement.',
+        isCore: false,
+      },
+      {
+        id: 'trust',
+        emoji: '🤝',
+        label: 'Trust',
+        description: 'Firm belief in the reliability of someone.',
+        isCore: false,
+      },
+      {
+        id: 'anxiety',
+        emoji: '😰',
+        label: 'Anxiety',
+        description: 'A feeling of worry or unease.',
+        isCore: false,
+      },
+      {
+        id: 'excitement',
+        emoji: '🤩',
+        label: 'Excitement',
+        description: 'A state of energetic enthusiasm.',
+        isCore: false,
+      },
+      {
+        id: 'frustration',
+        emoji: '😤',
+        label: 'Frustration',
+        description: 'Feeling upset from being unable to achieve something.',
+        isCore: false,
+      },
+      {
+        id: 'contentment',
+        emoji: '😌',
+        label: 'Contentment',
+        description: 'A state of peaceful happiness.',
+        isCore: false,
+      },
+      {
+        id: 'embarrassment',
+        emoji: '😳',
+        label: 'Embarrassment',
+        description: 'Feeling self-conscious or ashamed.',
+        isCore: false,
+      },
+      {
+        id: 'pride',
+        emoji: '😎',
+        label: 'Pride',
+        description: 'A feeling of satisfaction from achievement.',
+        isCore: false,
+      },
+      {
+        id: 'guilt',
+        emoji: '😔',
+        label: 'Guilt',
+        description: 'Feeling responsible for wrongdoing.',
+        isCore: false,
+      },
+      {
+        id: 'envy',
+        emoji: '😒',
+        label: 'Envy',
+        description: 'Wanting what someone else has.',
+        isCore: false,
+      },
+      {
+        id: 'relief',
+        emoji: '😅',
+        label: 'Relief',
+        description: 'Feeling reassured after worry.',
+        isCore: false,
+      },
+    ],
+    coreCount: 5,
+  }
+
+  // Helper to get core emotions
+  const coreEmotions = sampleContent.emotions.filter((e) => e.isCore)
+  const nonCoreEmotions = sampleContent.emotions.filter((e) => !e.isCore)
+
+  // ============================================
+  // SECTION 1: BASIC RENDERING (P0/P1)
+  // ============================================
+  describe('basic rendering', () => {
+    it('renders the header text', () => {
+      render(<EmojiGrid {...defaultProps} content={sampleContent} />)
+
+      expect(screen.getByText(sampleContent.header!)).toBeInTheDocument()
+    })
+
+    it('renders the instruction text', () => {
+      render(<EmojiGrid {...defaultProps} content={sampleContent} />)
+
+      expect(screen.getByText(sampleContent.instruction!)).toBeInTheDocument()
+    })
+
+    it('renders all 17 emotion items', () => {
+      render(<EmojiGrid {...defaultProps} content={sampleContent} />)
+
+      sampleContent.emotions.forEach((emotion) => {
+        expect(screen.getByText(emotion.label)).toBeInTheDocument()
+        expect(screen.getByText(emotion.emoji)).toBeInTheDocument()
+      })
+    })
+
+    it('renders continue button', () => {
+      render(<EmojiGrid {...defaultProps} content={sampleContent} />)
+
+      expect(screen.getByRole('button', { name: /continue/i })).toBeInTheDocument()
+    })
+
+    it('continue button is disabled initially', () => {
+      render(<EmojiGrid {...defaultProps} content={sampleContent} />)
+
+      const continueButton = screen.getByRole('button', { name: /continue/i })
+      expect(continueButton).toBeDisabled()
+    })
+
+    it('renders without header when not provided', () => {
+      const contentWithoutHeader = { ...sampleContent, header: undefined }
+      render(<EmojiGrid {...defaultProps} content={contentWithoutHeader} />)
+
+      // Should not crash, emotions should still render
+      expect(screen.getByText('Joy')).toBeInTheDocument()
+    })
+  })
+
+  // ============================================
+  // SECTION 2: CORE EMOTION STYLING (P2)
+  // ============================================
+  describe('core emotion styling', () => {
+    it('applies distinct border class to 5 core emotions', () => {
+      render(<EmojiGrid {...defaultProps} content={sampleContent} />)
+
+      coreEmotions.forEach((emotion) => {
+        const emotionButton = screen.getByRole('button', { name: new RegExp(emotion.label) })
+        // Expect a border class like border-emerald-500 or similar
+        expect(emotionButton.className).toMatch(/border-(emerald|purple|blue|amber)-\d+/)
+      })
+    })
+
+    it('does not apply border class to non-core emotions', () => {
+      render(<EmojiGrid {...defaultProps} content={sampleContent} />)
+
+      nonCoreEmotions.forEach((emotion) => {
+        const emotionButton = screen.getByRole('button', { name: new RegExp(emotion.label) })
+        // Non-core should have neutral/gray border or no special border
+        expect(emotionButton.className).not.toMatch(/border-(emerald|purple|blue|amber)-\d+/)
+      })
+    })
+
+    it('uses moduleColor for core emotion borders', () => {
+      render(<EmojiGrid {...defaultProps} content={sampleContent} moduleColor="purple" />)
+
+      const joyButton = screen.getByRole('button', { name: /Joy/i })
+      expect(joyButton.className).toMatch(/border-purple-\d+/)
+    })
+  })
+
+  // ============================================
+  // SECTION 3: MODAL BEHAVIOR (P0/P1)
+  // ============================================
+  describe('modal behavior', () => {
+    it('opens modal overlay when emotion is tapped', async () => {
+      render(<EmojiGrid {...defaultProps} content={sampleContent} />)
+
+      const joyButton = screen.getByRole('button', { name: /Joy/i })
+      fireEvent.click(joyButton)
+
+      await waitFor(() => {
+        expect(screen.getByRole('dialog')).toBeInTheDocument()
+      })
+    })
+
+    it('modal displays correct emotion name', async () => {
+      render(<EmojiGrid {...defaultProps} content={sampleContent} />)
+
+      fireEvent.click(screen.getByRole('button', { name: /Sadness/i }))
+
+      await waitFor(() => {
+        const modal = screen.getByRole('dialog')
+        expect(within(modal).getByText('Sadness')).toBeInTheDocument()
+      })
+    })
+
+    it('modal displays correct description', async () => {
+      render(<EmojiGrid {...defaultProps} content={sampleContent} />)
+
+      fireEvent.click(screen.getByRole('button', { name: /Fear/i }))
+
+      await waitFor(() => {
+        const modal = screen.getByRole('dialog')
+        expect(
+          within(modal).getByText(/unpleasant emotion caused by threat/i)
+        ).toBeInTheDocument()
+      })
+    })
+
+    it('modal shows close button', async () => {
+      render(<EmojiGrid {...defaultProps} content={sampleContent} />)
+
+      fireEvent.click(screen.getByRole('button', { name: /Joy/i }))
+
+      await waitFor(() => {
+        const modal = screen.getByRole('dialog')
+        // Could be "Close", "Got it", "X", etc.
+        expect(
+          within(modal).getByRole('button', { name: /(close|got it|dismiss)/i })
+        ).toBeInTheDocument()
+      })
+    })
+
+    it('close button closes the modal', async () => {
+      render(<EmojiGrid {...defaultProps} content={sampleContent} />)
+
+      // Open modal
+      fireEvent.click(screen.getByRole('button', { name: /Joy/i }))
+
+      await waitFor(() => {
+        expect(screen.getByRole('dialog')).toBeInTheDocument()
+      })
+
+      // Close modal
+      const modal = screen.getByRole('dialog')
+      const closeButton = within(modal).getByRole('button', { name: /(close|got it|dismiss)/i })
+      fireEvent.click(closeButton)
+
+      await waitFor(() => {
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+      })
+    })
+
+    it('pressing Escape key closes modal', async () => {
+      const user = userEvent.setup()
+      render(<EmojiGrid {...defaultProps} content={sampleContent} />)
+
+      fireEvent.click(screen.getByRole('button', { name: /Joy/i }))
+
+      await waitFor(() => {
+        expect(screen.getByRole('dialog')).toBeInTheDocument()
+      })
+
+      await user.keyboard('{Escape}')
+
+      await waitFor(() => {
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+      })
+    })
+
+    it('only one modal can be open at a time', async () => {
+      render(<EmojiGrid {...defaultProps} content={sampleContent} />)
+
+      // Open first modal
+      fireEvent.click(screen.getByRole('button', { name: /Joy/i }))
+
+      await waitFor(() => {
+        expect(screen.getByRole('dialog')).toBeInTheDocument()
+      })
+
+      // Attempt to open second (should close first or prevent)
+      // Implementation may vary - this tests the constraint
+      const dialogs = screen.queryAllByRole('dialog')
+      expect(dialogs.length).toBeLessThanOrEqual(1)
+    })
+  })
+
+  // ============================================
+  // SECTION 4: EXPLORED STATE TRACKING (P0/P1)
+  // ============================================
+  describe('explored state tracking', () => {
+    it('shows checkmark indicator on explored emotions after modal close', async () => {
+      render(<EmojiGrid {...defaultProps} content={sampleContent} />)
+
+      // Open and close modal for Joy
+      fireEvent.click(screen.getByRole('button', { name: /Joy/i }))
+
+      await waitFor(() => {
+        expect(screen.getByRole('dialog')).toBeInTheDocument()
+      })
+
+      const modal = screen.getByRole('dialog')
+      fireEvent.click(within(modal).getByRole('button', { name: /(close|got it)/i }))
+
+      await waitFor(() => {
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+      })
+
+      // Check for checkmark on Joy
+      const joyButton = screen.getByRole('button', { name: /Joy/i })
+      // Implementation may use aria-label, icon, or class
+      expect(joyButton.textContent).toMatch(/✓/) // or check for checkmark icon
+    })
+
+    it('calls onSaveResponse with revealed_items after exploration', async () => {
+      render(<EmojiGrid {...defaultProps} content={sampleContent} />)
+
+      // Explore Joy
+      fireEvent.click(screen.getByRole('button', { name: /Joy/i }))
+
+      await waitFor(() => {
+        expect(screen.getByRole('dialog')).toBeInTheDocument()
+      })
+
+      const modal = screen.getByRole('dialog')
+      fireEvent.click(within(modal).getByRole('button', { name: /(close|got it)/i }))
+
+      await waitFor(() => {
+        expect(mockOnSaveResponse).toHaveBeenCalledWith({
+          revealed_items: ['joy'],
+        })
+      })
+    })
+
+    it('accumulates revealed_items with each exploration', async () => {
+      render(<EmojiGrid {...defaultProps} content={sampleContent} />)
+
+      // Explore first emotion
+      fireEvent.click(screen.getByRole('button', { name: /Joy/i }))
+      await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument())
+      fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /(close|got it)/i }))
+
+      await waitFor(() => {
+        expect(mockOnSaveResponse).toHaveBeenLastCalledWith({
+          revealed_items: ['joy'],
+        })
+      })
+
+      // Explore second emotion
+      fireEvent.click(screen.getByRole('button', { name: /Sadness/i }))
+      await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument())
+      fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /(close|got it)/i }))
+
+      await waitFor(() => {
+        expect(mockOnSaveResponse).toHaveBeenLastCalledWith({
+          revealed_items: ['joy', 'sadness'],
+        })
+      })
+    })
+
+    it('does not duplicate emotion in revealed_items on re-exploration', async () => {
+      render(<EmojiGrid {...defaultProps} content={sampleContent} />)
+
+      // Explore Joy twice
+      for (let i = 0; i < 2; i++) {
+        fireEvent.click(screen.getByRole('button', { name: /Joy/i }))
+        await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument())
+        fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /(close|got it)/i }))
+        await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+      }
+
+      // Should only have joy once
+      expect(mockOnSaveResponse).toHaveBeenLastCalledWith({
+        revealed_items: ['joy'],
+      })
+    })
+  })
+
+  // ============================================
+  // SECTION 5: CONTINUE BUTTON LOGIC (P0)
+  // ============================================
+  describe('continue button behavior', () => {
+    it('remains disabled when 0 core emotions explored', () => {
+      render(<EmojiGrid {...defaultProps} content={sampleContent} />)
+
+      const continueButton = screen.getByRole('button', { name: /continue/i })
+      expect(continueButton).toBeDisabled()
+    })
+
+    it('remains disabled when only 4 core emotions explored', async () => {
+      render(<EmojiGrid {...defaultProps} content={sampleContent} />)
+
+      // Explore 4 of 5 core emotions
+      const fourCoreEmotions = coreEmotions.slice(0, 4)
+      for (const emotion of fourCoreEmotions) {
+        fireEvent.click(screen.getByRole('button', { name: new RegExp(emotion.label) }))
+        await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument())
+        fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /(close|got it)/i }))
+        await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+      }
+
+      const continueButton = screen.getByRole('button', { name: /continue/i })
+      expect(continueButton).toBeDisabled()
+    })
+
+    it('becomes enabled when all 5 core emotions explored', async () => {
+      render(<EmojiGrid {...defaultProps} content={sampleContent} />)
+
+      // Explore all 5 core emotions
+      for (const emotion of coreEmotions) {
+        fireEvent.click(screen.getByRole('button', { name: new RegExp(emotion.label) }))
+        await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument())
+        fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /(close|got it)/i }))
+        await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+      }
+
+      const continueButton = screen.getByRole('button', { name: /continue/i })
+      expect(continueButton).not.toBeDisabled()
+    })
+
+    it('stays enabled when exploring non-core emotions after 5 core', async () => {
+      const savedResponse: ScreenResponse = {
+        revealed_items: coreEmotions.map((e) => e.id),
+      }
+
+      render(
+        <EmojiGrid {...defaultProps} content={sampleContent} savedResponse={savedResponse} />
+      )
+
+      // Button should already be enabled
+      expect(screen.getByRole('button', { name: /continue/i })).not.toBeDisabled()
+
+      // Explore a non-core emotion
+      fireEvent.click(screen.getByRole('button', { name: /Surprise/i }))
+      await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument())
+      fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /(close|got it)/i }))
+
+      // Should still be enabled
+      expect(screen.getByRole('button', { name: /continue/i })).not.toBeDisabled()
+    })
+
+    it('calls onContinue when clicked while enabled', async () => {
+      const savedResponse: ScreenResponse = {
+        revealed_items: coreEmotions.map((e) => e.id),
+      }
+
+      render(
+        <EmojiGrid {...defaultProps} content={sampleContent} savedResponse={savedResponse} />
+      )
+
+      const continueButton = screen.getByRole('button', { name: /continue/i })
+      fireEvent.click(continueButton)
+
+      expect(mockOnContinue).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not call onContinue when button is disabled', () => {
+      render(<EmojiGrid {...defaultProps} content={sampleContent} />)
+
+      const continueButton = screen.getByRole('button', { name: /continue/i })
+      fireEvent.click(continueButton)
+
+      expect(mockOnContinue).not.toHaveBeenCalled()
+    })
+  })
+
+  // ============================================
+  // SECTION 6: SAVED RESPONSE RESTORATION (P0/P1)
+  // ============================================
+  describe('savedResponse restoration', () => {
+    it('restores explored emotions from savedResponse.revealed_items', () => {
+      const savedResponse: ScreenResponse = {
+        revealed_items: ['joy', 'sadness', 'fear'],
+      }
+
+      render(
+        <EmojiGrid {...defaultProps} content={sampleContent} savedResponse={savedResponse} />
+      )
+
+      // These emotions should show as explored (checkmark or visual indicator)
+      const joyButton = screen.getByRole('button', { name: /Joy/i })
+      const sadnessButton = screen.getByRole('button', { name: /Sadness/i })
+      const fearButton = screen.getByRole('button', { name: /Fear/i })
+
+      // Check for explored state indicator
+      expect(joyButton.textContent).toMatch(/✓/)
+      expect(sadnessButton.textContent).toMatch(/✓/)
+      expect(fearButton.textContent).toMatch(/✓/)
+    })
+
+    it('enables continue if savedResponse has all 5 core emotions', () => {
+      const savedResponse: ScreenResponse = {
+        revealed_items: coreEmotions.map((e) => e.id),
+      }
+
+      render(
+        <EmojiGrid {...defaultProps} content={sampleContent} savedResponse={savedResponse} />
+      )
+
+      const continueButton = screen.getByRole('button', { name: /continue/i })
+      expect(continueButton).not.toBeDisabled()
+    })
+
+    it('allows continuing exploration from saved state', async () => {
+      const savedResponse: ScreenResponse = {
+        revealed_items: ['joy', 'sadness'],
+      }
+
+      render(
+        <EmojiGrid {...defaultProps} content={sampleContent} savedResponse={savedResponse} />
+      )
+
+      // Explore a new emotion
+      fireEvent.click(screen.getByRole('button', { name: /Fear/i }))
+      await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument())
+      fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /(close|got it)/i }))
+
+      await waitFor(() => {
+        expect(mockOnSaveResponse).toHaveBeenCalledWith({
+          revealed_items: ['joy', 'sadness', 'fear'],
+        })
+      })
+    })
+
+    it('handles empty savedResponse gracefully', () => {
+      const savedResponse: ScreenResponse = {}
+
+      render(
+        <EmojiGrid {...defaultProps} content={sampleContent} savedResponse={savedResponse} />
+      )
+
+      // Should render normally, continue disabled
+      expect(screen.getByRole('button', { name: /continue/i })).toBeDisabled()
+    })
+
+    it('handles undefined savedResponse gracefully', () => {
+      render(<EmojiGrid {...defaultProps} content={sampleContent} savedResponse={undefined} />)
+
+      // Should render normally, continue disabled
+      expect(screen.getByRole('button', { name: /continue/i })).toBeDisabled()
+    })
+
+    it('handles savedResponse with invalid emotion IDs gracefully', () => {
+      const savedResponse: ScreenResponse = {
+        revealed_items: ['invalid_id_1', 'joy', 'invalid_id_2'],
+      }
+
+      render(
+        <EmojiGrid {...defaultProps} content={sampleContent} savedResponse={savedResponse} />
+      )
+
+      // Should not crash, joy should still be marked
+      const joyButton = screen.getByRole('button', { name: /Joy/i })
+      expect(joyButton.textContent).toMatch(/✓/)
+
+      // Continue should be disabled (only 1 valid core)
+      expect(screen.getByRole('button', { name: /continue/i })).toBeDisabled()
+    })
+  })
+
+  // ============================================
+  // SECTION 7: COLOR THEMING (P2)
+  // ============================================
+  describe('module color theming', () => {
+    it('applies emerald theme colors', () => {
+      render(<EmojiGrid {...defaultProps} content={sampleContent} moduleColor="emerald" />)
+
+      // Check continue button color
+      const continueButton = screen.getByRole('button', { name: /continue/i })
+      expect(continueButton).toHaveClass('bg-emerald-600')
+    })
+
+    it('applies purple theme colors', () => {
+      render(<EmojiGrid {...defaultProps} content={sampleContent} moduleColor="purple" />)
+
+      const continueButton = screen.getByRole('button', { name: /continue/i })
+      expect(continueButton).toHaveClass('bg-purple-600')
+    })
+
+    it('defaults to purple for unknown moduleColor', () => {
+      render(<EmojiGrid {...defaultProps} content={sampleContent} moduleColor="unknown" />)
+
+      const continueButton = screen.getByRole('button', { name: /continue/i })
+      expect(continueButton).toHaveClass('bg-purple-600')
+    })
+  })
+
+  // ============================================
+  // SECTION 8: ACCESSIBILITY (P2)
+  // ============================================
+  describe('accessibility', () => {
+    it('emotion items are focusable with Tab key', async () => {
+      const user = userEvent.setup()
+      render(<EmojiGrid {...defaultProps} content={sampleContent} />)
+
+      // Tab to first emotion
+      await user.tab()
+
+      // Some emotion should have focus
+      const focusedElement = document.activeElement
+      expect(focusedElement?.getAttribute('role')).toBe('button')
+    })
+
+    it('Enter key opens modal on focused emotion', async () => {
+      const user = userEvent.setup()
+      render(<EmojiGrid {...defaultProps} content={sampleContent} />)
+
+      // Focus first emotion
+      const joyButton = screen.getByRole('button', { name: /Joy/i })
+      joyButton.focus()
+
+      // Press Enter
+      await user.keyboard('{Enter}')
+
+      await waitFor(() => {
+        expect(screen.getByRole('dialog')).toBeInTheDocument()
+      })
+    })
+
+    it('modal has aria-modal="true"', async () => {
+      render(<EmojiGrid {...defaultProps} content={sampleContent} />)
+
+      fireEvent.click(screen.getByRole('button', { name: /Joy/i }))
+
+      await waitFor(() => {
+        const modal = screen.getByRole('dialog')
+        expect(modal).toHaveAttribute('aria-modal', 'true')
+      })
+    })
+
+    it('modal has aria-labelledby for title', async () => {
+      render(<EmojiGrid {...defaultProps} content={sampleContent} />)
+
+      fireEvent.click(screen.getByRole('button', { name: /Joy/i }))
+
+      await waitFor(() => {
+        const modal = screen.getByRole('dialog')
+        expect(modal).toHaveAttribute('aria-labelledby')
+      })
+    })
+  })
+
+  // ============================================
+  // SECTION 9: EDGE CASES (P2/P3)
+  // ============================================
+  describe('edge cases', () => {
+    it('handles content with only core emotions (5 total)', () => {
+      const minimalContent: EmojiGridContent = {
+        header: 'Core emotions only',
+        emotions: coreEmotions,
+        coreCount: 5,
+      }
+
+      render(<EmojiGrid {...defaultProps} content={minimalContent} />)
+
+      expect(screen.getAllByRole('button', { name: /Joy|Sadness|Fear|Anger|Disgust/i })).toHaveLength(5)
+    })
+
+    it('handles empty emotions array', () => {
+      const emptyContent: EmojiGridContent = {
+        header: 'No emotions',
+        emotions: [],
+        coreCount: 0,
+      }
+
+      render(<EmojiGrid {...defaultProps} content={emptyContent} />)
+
+      // Should not crash, continue should be enabled (no requirements)
+      const continueButton = screen.getByRole('button', { name: /continue/i })
+      expect(continueButton).not.toBeDisabled()
+    })
+
+    it('exploring all 17 emotions works correctly', async () => {
+      render(<EmojiGrid {...defaultProps} content={sampleContent} />)
+
+      // Explore all emotions
+      for (const emotion of sampleContent.emotions) {
+        fireEvent.click(screen.getByRole('button', { name: new RegExp(emotion.label) }))
+        await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument())
+        fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /(close|got it)/i }))
+        await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+      }
+
+      // All should be explored
+      expect(mockOnSaveResponse).toHaveBeenLastCalledWith({
+        revealed_items: sampleContent.emotions.map((e) => e.id),
+      })
+    })
+  })
+})

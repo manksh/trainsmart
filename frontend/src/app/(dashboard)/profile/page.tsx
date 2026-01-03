@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { apiGet, apiDelete } from '@/lib/api'
 import { MPA_DEFINITIONS, MPADimension } from '@/lib/mpaDefinitions'
 import { DimensionInfoModal } from '@/components/ui/DimensionInfoModal'
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 
 interface UserMembership {
   organization_id: string
@@ -129,12 +130,12 @@ function RadarChart({ scores }: { scores: Record<string, number> }) {
       ))}
       <polygon
         points={scorePoints.map((p) => `${p.x},${p.y}`).join(' ')}
-        fill="rgba(59, 130, 246, 0.3)"
-        stroke="#3b82f6"
+        fill="rgba(61, 79, 74, 0.3)"
+        stroke="#3d4f4a"
         strokeWidth="2"
       />
       {scorePoints.map((point, i) => (
-        <circle key={i} cx={point.x} cy={point.y} r="3" fill="#3b82f6" />
+        <circle key={i} cx={point.x} cy={point.y} r="3" fill="#3d4f4a" />
       ))}
       {pillars.map((pillar, i) => {
         const angle = (i * 360) / pillars.length - 90
@@ -384,7 +385,7 @@ function AssessmentResults({ results, onRedo }: { results: AssessmentResult; onR
                   setShowConfirm(false)
                   onRedo()
                 }}
-                className="flex-1 py-3 px-4 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700"
+                className="flex-1 py-3 px-4 bg-sage-700 text-white rounded-xl font-medium hover:bg-sage-800"
               >
                 Redo Assessment
               </button>
@@ -407,8 +408,8 @@ function NoAssessment({ onStart }: { onStart: () => void }) {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
       <div className="max-w-md mx-auto">
-        <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="w-16 h-16 bg-sage-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg className="w-8 h-8 text-sage-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
           </svg>
         </div>
@@ -420,7 +421,7 @@ function NoAssessment({ onStart }: { onStart: () => void }) {
         </p>
         <button
           onClick={onStart}
-          className="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+          className="bg-sage-700 text-white px-6 py-2 rounded-lg font-medium hover:bg-sage-800 transition-colors"
         >
           Start Assessment
         </button>
@@ -490,7 +491,7 @@ export default function ProfilePage() {
   if (isLoading || isLoadingData) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <LoadingSpinner />
       </div>
     )
   }
@@ -502,8 +503,8 @@ export default function ProfilePage() {
       {/* Profile Header */}
       <div className="mb-8">
         <div className="flex items-center gap-4 mb-4">
-          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
-            <span className="text-2xl font-bold text-blue-600">
+          <div className="w-16 h-16 bg-sage-100 rounded-full flex items-center justify-center">
+            <span className="text-2xl font-bold text-sage-700">
               {fullUser?.first_name?.[0]}{fullUser?.last_name?.[0]}
             </span>
           </div>

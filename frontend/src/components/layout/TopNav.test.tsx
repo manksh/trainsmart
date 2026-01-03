@@ -125,6 +125,6 @@ describe('TopNav', () => {
 
     // Home should be active since pathname is '/athlete'
     const homeButton = screen.getByText('Home').closest('button')
-    expect(homeButton).toHaveClass('bg-blue-50', 'text-blue-600')
+    expect(homeButton).toHaveClass('bg-sage-50', 'text-sage-700')
   })
 })
