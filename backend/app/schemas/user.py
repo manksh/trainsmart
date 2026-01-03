@@ -58,6 +58,7 @@ class AthleteWithAssessmentStatus(UserResponse):
     has_completed_assessment: bool = False
     assessment_completed_at: Optional[datetime] = None
     pillar_scores: Optional[dict] = None
+    meta_scores: Optional[dict] = None  # {thinking, feeling, action}
     strengths: Optional[List[str]] = None
     growth_areas: Optional[List[str]] = None
 

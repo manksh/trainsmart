@@ -248,6 +248,7 @@ async def get_organization_athletes(
                 has_completed_assessment=assessment is not None,
                 assessment_completed_at=assessment.completed_at if assessment else None,
                 pillar_scores=assessment.pillar_scores if assessment else None,
+                meta_scores=assessment.meta_scores if assessment else None,
                 strengths=assessment.strengths if assessment else None,
                 growth_areas=assessment.growth_areas if assessment else None,
             )

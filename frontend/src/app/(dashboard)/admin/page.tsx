@@ -6,6 +6,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { apiGet, apiPost } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 
 interface Athlete {
   id: string
@@ -16,6 +17,7 @@ interface Athlete {
   has_completed_assessment: boolean
   assessment_completed_at: string | null
   pillar_scores: Record<string, number> | null
+  meta_scores: Record<string, number> | null  // {thinking, feeling, action}
   strengths: string[] | null
   growth_areas: string[] | null
 }
@@ -34,6 +36,32 @@ const PILLAR_DISPLAY_NAMES: Record<string, string> = {
 }
 
 const CORE_PILLARS = ['mindfulness', 'confidence', 'motivation', 'attentional_focus', 'arousal_control', 'resilience']
+
+const META_DISPLAY_NAMES: Record<string, string> = {
+  thinking: 'Thinking',
+  feeling: 'Feeling',
+  action: 'Action',
+}
+
+const META_COLORS: Record<string, { bg: string; text: string }> = {
+  thinking: { bg: 'bg-blue-100', text: 'text-blue-700' },
+  feeling: { bg: 'bg-pink-100', text: 'text-pink-700' },
+  action: { bg: 'bg-green-100', text: 'text-green-700' },
+}
+
+function MetaScoreBadge({ category, score }: { category: string; score: number }) {
+  const colors = META_COLORS[category] || { bg: 'bg-gray-100', text: 'text-gray-700' }
+  return (
+    <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-md ${colors.bg}`}>
+      <span className={`text-xs font-medium ${colors.text}`}>
+        {META_DISPLAY_NAMES[category] || category}
+      </span>
+      <span className={`text-xs font-bold ${colors.text}`}>
+        {score.toFixed(1)}
+      </span>
+    </div>
+  )
+}
 
 function ScoreBar({ score, maxScore = 7 }: { score: number; maxScore?: number }) {
   const percentage = (score / maxScore) * 100
@@ -159,7 +187,7 @@ export default function AdminDashboard() {
   if (isLoading || isLoadingData) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+        <LoadingSpinner />
       </div>
     )
   }
@@ -291,6 +319,9 @@ export default function AdminDashboard() {
                       Joined
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Thinking / Feeling / Action
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Assessment
                     </th>
                   </tr>
@@ -313,6 +344,17 @@ export default function AdminDashboard() {
                             {athlete.joined_at
                               ? new Date(athlete.joined_at).toLocaleDateString()
                               : '-'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {athlete.meta_scores ? (
+                              <div className="flex gap-1">
+                                <MetaScoreBadge category="thinking" score={athlete.meta_scores.thinking || 0} />
+                                <MetaScoreBadge category="feeling" score={athlete.meta_scores.feeling || 0} />
+                                <MetaScoreBadge category="action" score={athlete.meta_scores.action || 0} />
+                              </div>
+                            ) : (
+                              <span className="text-sm text-gray-400">-</span>
+                            )}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center gap-2">
@@ -352,7 +394,7 @@ export default function AdminDashboard() {
                         {/* Expanded scores row */}
                         {isExpanded && athlete.pillar_scores && (
                           <tr className="bg-gray-50">
-                            <td colSpan={4} className="px-6 py-4">
+                            <td colSpan={5} className="px-6 py-4">
                               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                                 {CORE_PILLARS.map((pillar) => {
                                   const score = athlete.pillar_scores?.[pillar] || 0
