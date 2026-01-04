@@ -61,8 +61,8 @@ const CHECK_IN_OPTIONS: CheckInOption[] = [
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
       </svg>
     ),
-    color: 'text-pink-600',
-    bgColor: 'bg-pink-100',
+    color: 'text-rose-600',
+    bgColor: 'bg-rose-50',
     route: '/checkin/mood',
   },
   {
@@ -74,8 +74,8 @@ const CHECK_IN_OPTIONS: CheckInOption[] = [
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
       </svg>
     ),
-    color: 'text-green-600',
-    bgColor: 'bg-green-100',
+    color: 'text-teal-600',
+    bgColor: 'bg-teal-50',
     route: '/checkin/energy',
   },
   {
@@ -88,7 +88,7 @@ const CHECK_IN_OPTIONS: CheckInOption[] = [
       </svg>
     ),
     color: 'text-amber-600',
-    bgColor: 'bg-amber-100',
+    bgColor: 'bg-amber-50',
     route: '/checkin/confidence',
   },
 ]
@@ -388,15 +388,15 @@ function CheckInHistory() {
     switch (type) {
       case 'mood':
         return (
-          <div className="w-8 h-8 rounded-full bg-pink-100 flex items-center justify-center">
-            <svg className="w-4 h-4 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="w-8 h-8 rounded-full bg-rose-50 flex items-center justify-center">
+            <svg className="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
             </svg>
           </div>
         )
       case 'confidence':
         return (
-          <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center">
             <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
             </svg>
@@ -404,16 +404,16 @@ function CheckInHistory() {
         )
       case 'energy':
         return (
-          <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
-            <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="w-8 h-8 rounded-full bg-teal-50 flex items-center justify-center">
+            <svg className="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
           </div>
         )
       case 'breathing':
         return (
-          <div className="w-8 h-8 rounded-full bg-cyan-100 flex items-center justify-center">
-            <svg className="w-4 h-4 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center">
+            <svg className="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
             </svg>
           </div>
@@ -537,11 +537,18 @@ function MentalPerformanceScores({ scores, onViewProfile }: {
 }) {
   const maxScore = 7
 
-  const getScoreColor = (score: number) => {
-    const percentage = (score / maxScore) * 100
-    if (percentage >= 70) return { bg: 'bg-green-100', text: 'text-green-600', bar: 'bg-green-500' }
-    if (percentage >= 50) return { bg: 'bg-yellow-100', text: 'text-yellow-600', bar: 'bg-yellow-500' }
-    return { bg: 'bg-orange-100', text: 'text-orange-600', bar: 'bg-orange-500' }
+  // Use category-specific muted colors instead of score-based colors
+  const getCategoryColor = (key: string) => {
+    switch (key) {
+      case 'thinking':
+        return { bg: 'bg-slate-100', text: 'text-slate-700', bar: 'bg-slate-500' }
+      case 'feeling':
+        return { bg: 'bg-amber-50', text: 'text-amber-700', bar: 'bg-amber-500' }
+      case 'action':
+        return { bg: 'bg-teal-50', text: 'text-teal-700', bar: 'bg-teal-500' }
+      default:
+        return { bg: 'bg-gray-100', text: 'text-gray-600', bar: 'bg-gray-500' }
+    }
   }
 
   const categories = [
@@ -563,7 +570,7 @@ function MentalPerformanceScores({ scores, onViewProfile }: {
       </div>
       <div className="space-y-3">
         {categories.map((cat) => {
-          const colors = getScoreColor(cat.score)
+          const colors = getCategoryColor(cat.key)
           const percentage = (cat.score / maxScore) * 100
           return (
             <div key={cat.key} className="flex items-center gap-3">

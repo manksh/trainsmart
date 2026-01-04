@@ -266,14 +266,14 @@ export const META_CATEGORY_KEYS = ['thinking', 'feeling', 'action'] as const
 /** Type for meta category keys */
 export type MetaCategoryKey = (typeof META_CATEGORY_KEYS)[number]
 
-/** Meta category display configuration */
+/** Meta category display configuration - Option A: Muted Naturals */
 export const META_CATEGORIES: Record<
   MetaCategoryKey,
   { name: string; bg: string; text: string }
 > = {
-  thinking: { name: 'Thinking', bg: 'bg-blue-100', text: 'text-blue-700' },
-  feeling: { name: 'Feeling', bg: 'bg-pink-100', text: 'text-pink-700' },
-  action: { name: 'Action', bg: 'bg-green-100', text: 'text-green-700' },
+  thinking: { name: 'Thinking', bg: 'bg-slate-100', text: 'text-slate-700' },
+  feeling: { name: 'Feeling', bg: 'bg-amber-50', text: 'text-amber-700' },
+  action: { name: 'Action', bg: 'bg-teal-50', text: 'text-teal-700' },
 }
 
 // Helper to get category display name

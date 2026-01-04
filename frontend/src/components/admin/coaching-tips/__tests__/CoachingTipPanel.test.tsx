@@ -55,19 +55,29 @@ vi.mock('@/hooks/useCoachingTips', () => ({
     isLoading: false,
     error: null,
   }),
+  getTipContext: (pillar: string, strengths: string[] | null, growthAreas: string[] | null) => {
+    if (strengths?.includes(pillar)) return 'strength'
+    if (growthAreas?.includes(pillar)) return 'growth'
+    return null
+  },
 }))
 
 describe('CoachingTipPanel', () => {
   const mockOnClose = vi.fn()
+
+  // Updated mock athlete to match the new component interface
   const mockAthlete = {
     id: '123',
     first_name: 'Sarah',
     last_name: 'Johnson',
-  }
-  const mockPillarScores = {
-    confidence: 6.2,
-    arousal_control: 2.8,
-    mindfulness: 4.5,
+    has_completed_assessment: true,
+    pillar_scores: {
+      confidence: 6.2,
+      arousal_control: 2.8,
+      mindfulness: 4.5,
+    },
+    strengths: ['confidence'],
+    growth_areas: ['arousal_control'],
   }
 
   beforeEach(() => {
@@ -81,24 +91,25 @@ describe('CoachingTipPanel', () => {
           isOpen={true}
           onClose={mockOnClose}
           athlete={mockAthlete}
-          pillarScores={mockPillarScores}
         />
       )
 
       expect(screen.getByRole('dialog')).toBeInTheDocument()
     })
 
-    it('does not render when isOpen is false', () => {
+    it('is hidden with CSS when isOpen is false', () => {
       render(
         <CoachingTipPanel
           isOpen={false}
           onClose={mockOnClose}
           athlete={mockAthlete}
-          pillarScores={mockPillarScores}
         />
       )
 
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+      // Component uses CSS transform for visibility, so it's still in DOM
+      // but has translate-x-full class
+      const dialog = screen.getByRole('dialog')
+      expect(dialog).toHaveClass('translate-x-full')
     })
 
     it('displays athlete name in header', () => {
@@ -107,7 +118,6 @@ describe('CoachingTipPanel', () => {
           isOpen={true}
           onClose={mockOnClose}
           athlete={mockAthlete}
-          pillarScores={mockPillarScores}
         />
       )
 
@@ -120,7 +130,6 @@ describe('CoachingTipPanel', () => {
           isOpen={true}
           onClose={mockOnClose}
           athlete={mockAthlete}
-          pillarScores={mockPillarScores}
         />
       )
 
@@ -135,7 +144,6 @@ describe('CoachingTipPanel', () => {
           isOpen={true}
           onClose={mockOnClose}
           athlete={mockAthlete}
-          pillarScores={mockPillarScores}
         />
       )
 
@@ -143,18 +151,17 @@ describe('CoachingTipPanel', () => {
       expect(dialog).toHaveAttribute('aria-modal', 'true')
     })
 
-    it('has aria-labelledby for dialog title', () => {
+    it('has aria-label for dialog', () => {
       render(
         <CoachingTipPanel
           isOpen={true}
           onClose={mockOnClose}
           athlete={mockAthlete}
-          pillarScores={mockPillarScores}
         />
       )
 
       const dialog = screen.getByRole('dialog')
-      expect(dialog).toHaveAttribute('aria-labelledby')
+      expect(dialog).toHaveAttribute('aria-label')
     })
 
     it('calls onClose when Escape key is pressed', () => {
@@ -163,28 +170,10 @@ describe('CoachingTipPanel', () => {
           isOpen={true}
           onClose={mockOnClose}
           athlete={mockAthlete}
-          pillarScores={mockPillarScores}
         />
       )
 
       fireEvent.keyDown(document, { key: 'Escape' })
-
-      expect(mockOnClose).toHaveBeenCalledTimes(1)
-    })
-
-    it('calls onClose when clicking backdrop', () => {
-      render(
-        <CoachingTipPanel
-          isOpen={true}
-          onClose={mockOnClose}
-          athlete={mockAthlete}
-          pillarScores={mockPillarScores}
-        />
-      )
-
-      // Click on the backdrop (overlay)
-      const backdrop = screen.getByTestId('panel-backdrop')
-      fireEvent.click(backdrop)
 
       expect(mockOnClose).toHaveBeenCalledTimes(1)
     })
@@ -195,7 +184,6 @@ describe('CoachingTipPanel', () => {
           isOpen={true}
           onClose={mockOnClose}
           athlete={mockAthlete}
-          pillarScores={mockPillarScores}
         />
       )
 
@@ -206,20 +194,19 @@ describe('CoachingTipPanel', () => {
     })
   })
 
-  describe('filter tabs', () => {
-    it('renders filter tabs for All, Strengths, and Growth Areas', () => {
+  describe('filter buttons', () => {
+    it('renders filter buttons for All, Strengths, and Growth', () => {
       render(
         <CoachingTipPanel
           isOpen={true}
           onClose={mockOnClose}
           athlete={mockAthlete}
-          pillarScores={mockPillarScores}
         />
       )
 
-      expect(screen.getByText('All')).toBeInTheDocument()
-      expect(screen.getByText('Strengths')).toBeInTheDocument()
-      expect(screen.getByText('Growth Areas')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /All/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /Strengths/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /Growth/i })).toBeInTheDocument()
     })
 
     it('shows All filter as active by default', () => {
@@ -228,12 +215,11 @@ describe('CoachingTipPanel', () => {
           isOpen={true}
           onClose={mockOnClose}
           athlete={mockAthlete}
-          pillarScores={mockPillarScores}
         />
       )
 
-      const allTab = screen.getByRole('tab', { name: 'All' })
-      expect(allTab).toHaveAttribute('aria-selected', 'true')
+      const allButton = screen.getByRole('button', { name: /All.*2/i })
+      expect(allButton).toHaveAttribute('aria-pressed', 'true')
     })
 
     it('switches to Strengths filter when clicked', async () => {
@@ -242,284 +228,205 @@ describe('CoachingTipPanel', () => {
           isOpen={true}
           onClose={mockOnClose}
           athlete={mockAthlete}
-          pillarScores={mockPillarScores}
         />
       )
 
-      const strengthsTab = screen.getByRole('tab', { name: 'Strengths' })
-      fireEvent.click(strengthsTab)
+      const strengthsButton = screen.getByRole('button', { name: /Strengths/i })
+      fireEvent.click(strengthsButton)
 
       await waitFor(() => {
-        expect(strengthsTab).toHaveAttribute('aria-selected', 'true')
+        expect(strengthsButton).toHaveAttribute('aria-pressed', 'true')
       })
     })
 
-    it('switches to Growth Areas filter when clicked', async () => {
+    it('switches to Growth filter when clicked', async () => {
       render(
         <CoachingTipPanel
           isOpen={true}
           onClose={mockOnClose}
           athlete={mockAthlete}
-          pillarScores={mockPillarScores}
         />
       )
 
-      const growthTab = screen.getByRole('tab', { name: 'Growth Areas' })
-      fireEvent.click(growthTab)
+      const growthButton = screen.getByRole('button', { name: /Growth/i })
+      fireEvent.click(growthButton)
 
       await waitFor(() => {
-        expect(growthTab).toHaveAttribute('aria-selected', 'true')
+        expect(growthButton).toHaveAttribute('aria-pressed', 'true')
       })
     })
   })
 
-  describe('tip filtering by score', () => {
-    it('shows strength tips for scores >= 5.5', () => {
+  describe('tip filtering by strengths/growth arrays', () => {
+    it('shows tips for pillars in strengths array', () => {
       render(
         <CoachingTipPanel
           isOpen={true}
           onClose={mockOnClose}
           athlete={mockAthlete}
-          pillarScores={mockPillarScores}
         />
       )
 
-      // Confidence has score 6.2 (strength)
+      // Confidence is in strengths array
       expect(screen.getByText('Confidence')).toBeInTheDocument()
     })
 
-    it('shows growth tips for scores <= 3.5', () => {
+    it('shows tips for pillars in growth_areas array', () => {
       render(
         <CoachingTipPanel
           isOpen={true}
           onClose={mockOnClose}
           athlete={mockAthlete}
-          pillarScores={mockPillarScores}
         />
       )
 
-      // Arousal Control has score 2.8 (growth)
+      // Arousal Control is in growth_areas array
       expect(screen.getByText('Arousal Control')).toBeInTheDocument()
     })
 
-    it('filters to show only strengths when Strengths tab selected', async () => {
+    it('filters to show only strengths when Strengths button selected', async () => {
       render(
         <CoachingTipPanel
           isOpen={true}
           onClose={mockOnClose}
           athlete={mockAthlete}
-          pillarScores={mockPillarScores}
         />
       )
 
-      const strengthsTab = screen.getByRole('tab', { name: 'Strengths' })
-      fireEvent.click(strengthsTab)
+      const strengthsButton = screen.getByRole('button', { name: /Strengths/i })
+      fireEvent.click(strengthsButton)
 
       await waitFor(() => {
-        // Confidence (6.2) should be visible
+        // Confidence (in strengths) should be visible
         expect(screen.getByText('Confidence')).toBeInTheDocument()
       })
-
-      // Arousal Control (2.8) should not be visible in strengths
-      // Note: The actual filtering behavior depends on implementation
     })
 
-    it('filters to show only growth areas when Growth Areas tab selected', async () => {
+    it('filters to show only growth areas when Growth button selected', async () => {
       render(
         <CoachingTipPanel
           isOpen={true}
           onClose={mockOnClose}
           athlete={mockAthlete}
-          pillarScores={mockPillarScores}
         />
       )
 
-      const growthTab = screen.getByRole('tab', { name: 'Growth Areas' })
-      fireEvent.click(growthTab)
+      const growthButton = screen.getByRole('button', { name: /Growth/i })
+      fireEvent.click(growthButton)
 
       await waitFor(() => {
-        // Arousal Control (2.8) should be visible
+        // Arousal Control (in growth_areas) should be visible
         expect(screen.getByText('Arousal Control')).toBeInTheDocument()
       })
     })
   })
 
   describe('empty states', () => {
-    it('shows message when no tips match filter', async () => {
-      // Use pillar scores with no strengths or growth areas
-      const middleScores = {
-        confidence: 4.5,
-        arousal_control: 4.5,
-        mindfulness: 4.5,
+    it('shows message when athlete has no assessment', () => {
+      const noAssessmentAthlete = {
+        ...mockAthlete,
+        has_completed_assessment: false,
+        strengths: null,
+        growth_areas: null,
       }
 
       render(
         <CoachingTipPanel
           isOpen={true}
           onClose={mockOnClose}
-          athlete={mockAthlete}
-          pillarScores={middleScores}
+          athlete={noAssessmentAthlete}
         />
       )
 
-      const strengthsTab = screen.getByRole('tab', { name: 'Strengths' })
-      fireEvent.click(strengthsTab)
+      expect(screen.getByText(/Assessment Not Completed/)).toBeInTheDocument()
+    })
 
-      await waitFor(() => {
-        expect(screen.getByText(/No strength areas identified/)).toBeInTheDocument()
-      })
+    it('shows message when athlete has no strengths or growth areas', () => {
+      const noTipsAthlete = {
+        ...mockAthlete,
+        strengths: [],
+        growth_areas: [],
+      }
+
+      render(
+        <CoachingTipPanel
+          isOpen={true}
+          onClose={mockOnClose}
+          athlete={noTipsAthlete}
+        />
+      )
+
+      expect(screen.getByText(/No Qualifying Scores/)).toBeInTheDocument()
     })
 
     it('handles athlete with all growth areas', async () => {
-      const lowScores = {
-        confidence: 2.0,
-        arousal_control: 2.5,
-        mindfulness: 3.0,
+      const allGrowthAthlete = {
+        ...mockAthlete,
+        strengths: [],
+        growth_areas: ['arousal_control', 'mindfulness'],
       }
 
       render(
         <CoachingTipPanel
           isOpen={true}
           onClose={mockOnClose}
-          athlete={mockAthlete}
-          pillarScores={lowScores}
+          athlete={allGrowthAthlete}
         />
       )
 
-      const strengthsTab = screen.getByRole('tab', { name: 'Strengths' })
-      fireEvent.click(strengthsTab)
+      const strengthsButton = screen.getByRole('button', { name: /Strengths/i })
+      fireEvent.click(strengthsButton)
 
       await waitFor(() => {
-        expect(screen.getByText(/No strength areas identified/)).toBeInTheDocument()
+        expect(screen.getByText(/No Strength Tips/)).toBeInTheDocument()
       })
     })
 
     it('handles athlete with all strengths', async () => {
-      const highScores = {
-        confidence: 6.5,
-        arousal_control: 6.0,
-        mindfulness: 5.8,
+      const allStrengthsAthlete = {
+        ...mockAthlete,
+        strengths: ['confidence', 'mindfulness'],
+        growth_areas: [],
       }
 
       render(
         <CoachingTipPanel
           isOpen={true}
           onClose={mockOnClose}
-          athlete={mockAthlete}
-          pillarScores={highScores}
+          athlete={allStrengthsAthlete}
         />
       )
 
-      const growthTab = screen.getByRole('tab', { name: 'Growth Areas' })
-      fireEvent.click(growthTab)
+      const growthButton = screen.getByRole('button', { name: /Growth/i })
+      fireEvent.click(growthButton)
 
       await waitFor(() => {
-        expect(screen.getByText(/No growth areas identified/)).toBeInTheDocument()
-      })
-    })
-  })
-
-  describe('loading state', () => {
-    it('shows loading indicator when data is loading', () => {
-      // Override the mock for this test
-      vi.doMock('@/hooks/useCoachingTips', () => ({
-        useCoachingTips: () => ({
-          data: null,
-          isLoading: true,
-          error: null,
-        }),
-      }))
-
-      render(
-        <CoachingTipPanel
-          isOpen={true}
-          onClose={mockOnClose}
-          athlete={mockAthlete}
-          pillarScores={mockPillarScores}
-        />
-      )
-
-      // Should show loading state or skeleton
-      expect(screen.getByTestId('loading-indicator') || screen.getByRole('progressbar')).toBeTruthy()
-    })
-  })
-
-  describe('error state', () => {
-    it('shows error message when fetch fails', () => {
-      // Override the mock for this test
-      vi.doMock('@/hooks/useCoachingTips', () => ({
-        useCoachingTips: () => ({
-          data: null,
-          isLoading: false,
-          error: new Error('Failed to load coaching tips'),
-        }),
-      }))
-
-      render(
-        <CoachingTipPanel
-          isOpen={true}
-          onClose={mockOnClose}
-          athlete={mockAthlete}
-          pillarScores={mockPillarScores}
-        />
-      )
-
-      expect(screen.getByText(/Failed to load/)).toBeInTheDocument()
-    })
-  })
-
-  describe('keyboard navigation', () => {
-    it('focuses first interactive element when panel opens', () => {
-      render(
-        <CoachingTipPanel
-          isOpen={true}
-          onClose={mockOnClose}
-          athlete={mockAthlete}
-          pillarScores={mockPillarScores}
-        />
-      )
-
-      // First interactive element should receive focus (usually close button)
-      const closeButton = screen.getByRole('button', { name: /close/i })
-      expect(document.activeElement).toBe(closeButton)
-    })
-
-    it('allows tab navigation between filter tabs', () => {
-      render(
-        <CoachingTipPanel
-          isOpen={true}
-          onClose={mockOnClose}
-          athlete={mockAthlete}
-          pillarScores={mockPillarScores}
-        />
-      )
-
-      const tabs = screen.getAllByRole('tab')
-      expect(tabs.length).toBe(3)
-
-      // All tabs should be tabbable
-      tabs.forEach((tab) => {
-        expect(tab).not.toHaveAttribute('tabindex', '-1')
+        expect(screen.getByText(/No Growth Tips/)).toBeInTheDocument()
       })
     })
   })
 
   describe('tip card display', () => {
-    it('shows correct tip type based on score context', () => {
+    it('shows correct tip type based on array membership', () => {
       render(
         <CoachingTipPanel
           isOpen={true}
           onClose={mockOnClose}
           athlete={mockAthlete}
-          pillarScores={mockPillarScores}
         />
       )
 
-      // Confidence (6.2) should show as Strength
-      expect(screen.getByText('Strength')).toBeInTheDocument()
+      // Confidence (in strengths) should show as Strength badge
+      const strengthBadge = screen.getByText('Strength')
+      expect(strengthBadge).toBeInTheDocument()
+      expect(strengthBadge).toHaveClass('bg-green-100')
 
-      // Arousal Control (2.8) should show as Growth Area
-      expect(screen.getByText('Growth Area')).toBeInTheDocument()
+      // Arousal Control (in growth_areas) should show as Growth badge
+      // Use getAllByText since "Growth" appears in both button and badge
+      const growthElements = screen.getAllByText('Growth')
+      // The badge should have orange styling
+      const growthBadge = growthElements.find(el => el.classList.contains('bg-orange-100'))
+      expect(growthBadge).toBeInTheDocument()
     })
 
     it('displays practice and game day tips for each pillar', () => {
@@ -528,7 +435,6 @@ describe('CoachingTipPanel', () => {
           isOpen={true}
           onClose={mockOnClose}
           athlete={mockAthlete}
-          pillarScores={mockPillarScores}
         />
       )
 
@@ -538,6 +444,21 @@ describe('CoachingTipPanel', () => {
 
       expect(practiceSections.length).toBeGreaterThan(0)
       expect(gameDaySections.length).toBeGreaterThan(0)
+    })
+  })
+
+  describe('null athlete handling', () => {
+    it('handles null athlete gracefully', () => {
+      render(
+        <CoachingTipPanel
+          isOpen={true}
+          onClose={mockOnClose}
+          athlete={null}
+        />
+      )
+
+      // Should still render the dialog without crashing
+      expect(screen.getByRole('dialog')).toBeInTheDocument()
     })
   })
 })

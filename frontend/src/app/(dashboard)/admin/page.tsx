@@ -427,12 +427,12 @@ export default function AdminDashboard() {
                                           className="text-sm font-medium text-gray-700"
                                         />
                                         {isStrength && (
-                                          <span className="text-xs px-1.5 py-0.5 bg-green-100 text-green-700 rounded">
+                                          <span className="text-xs px-1.5 py-0.5 bg-teal-50 text-teal-700 rounded">
                                             Strength
                                           </span>
                                         )}
                                         {isGrowth && (
-                                          <span className="text-xs px-1.5 py-0.5 bg-orange-100 text-orange-700 rounded">
+                                          <span className="text-xs px-1.5 py-0.5 bg-amber-50 text-amber-700 rounded">
                                             Growth
                                           </span>
                                         )}

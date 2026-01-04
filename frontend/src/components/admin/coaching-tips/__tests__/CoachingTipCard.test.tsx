@@ -54,7 +54,7 @@ describe('CoachingTipCard', () => {
       const badge = screen.getByText('Strength')
       expect(badge).toBeInTheDocument()
       expect(badge).toHaveClass('bg-green-100')
-      expect(badge).toHaveClass('text-green-800')
+      expect(badge).toHaveClass('text-green-700')
     })
 
     it('uses green color scheme for strength tips', () => {
@@ -67,20 +67,20 @@ describe('CoachingTipCard', () => {
   })
 
   describe('growth context styling', () => {
-    it('renders growth area badge with correct styling', () => {
+    it('renders growth badge with correct styling', () => {
       render(<CoachingTipCard {...growthProps} />)
 
-      const badge = screen.getByText('Growth Area')
+      const badge = screen.getByText('Growth')
       expect(badge).toBeInTheDocument()
       expect(badge).toHaveClass('bg-orange-100')
-      expect(badge).toHaveClass('text-orange-800')
+      expect(badge).toHaveClass('text-orange-700')
     })
 
     it('uses orange color scheme for growth tips', () => {
       render(<CoachingTipCard {...growthProps} />)
 
       // Card should have orange styling elements
-      const growthBadge = screen.getByText('Growth Area')
+      const growthBadge = screen.getByText('Growth')
       expect(growthBadge.className).toMatch(/orange/)
     })
 
@@ -156,7 +156,7 @@ describe('CoachingTipCard', () => {
       render(<CoachingTipCard {...thresholdProps} />)
 
       expect(screen.getByText('3.5')).toBeInTheDocument()
-      expect(screen.getByText('Growth Area')).toBeInTheDocument()
+      expect(screen.getByText('Growth')).toBeInTheDocument()
     })
 
     it('handles long pillar names', () => {
@@ -206,6 +206,7 @@ describe('CoachingTipCard', () => {
   })
 
   describe('all pillars render correctly', () => {
+    // Updated to use the correct 10 pillars from the MPA framework
     const allPillars = [
       { pillar: 'mindfulness', displayName: 'Mindfulness' },
       { pillar: 'confidence', displayName: 'Confidence' },
@@ -213,10 +214,10 @@ describe('CoachingTipCard', () => {
       { pillar: 'motivation', displayName: 'Motivation' },
       { pillar: 'arousal_control', displayName: 'Arousal Control' },
       { pillar: 'resilience', displayName: 'Resilience' },
-      { pillar: 'coachability', displayName: 'Coachability' },
+      { pillar: 'deliberate_practice', displayName: 'Deliberate Practice' },
       { pillar: 'self_awareness', displayName: 'Self-Awareness' },
-      { pillar: 'leadership', displayName: 'Leadership' },
-      { pillar: 'mental_imagery', displayName: 'Mental Imagery' },
+      { pillar: 'knowledge', displayName: 'Knowledge' },
+      { pillar: 'wellness', displayName: 'Wellness' },
     ]
 
     allPillars.forEach(({ pillar, displayName }) => {

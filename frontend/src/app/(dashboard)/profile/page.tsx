@@ -164,11 +164,18 @@ function RadarChart({ scores }: { scores: Record<string, number> }) {
 function MetaScoresCard({ scores, onInfoClick }: { scores: { thinking: number; feeling: number; action: number }; onInfoClick: (key: string) => void }) {
   const maxScore = 7
 
-  const getScoreColor = (score: number) => {
-    const percentage = (score / maxScore) * 100
-    if (percentage >= 70) return { bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-600', bar: 'bg-green-500' }
-    if (percentage >= 50) return { bg: 'bg-yellow-50', border: 'border-yellow-200', text: 'text-yellow-600', bar: 'bg-yellow-500' }
-    return { bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-600', bar: 'bg-orange-500' }
+  // Score color function - using muted naturals matching each category
+  const getCategoryColors = (key: string) => {
+    switch (key) {
+      case 'thinking':
+        return { bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-700', bar: 'bg-slate-500' }
+      case 'feeling':
+        return { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700', bar: 'bg-amber-500' }
+      case 'acting':
+        return { bg: 'bg-teal-50', border: 'border-teal-200', text: 'text-teal-700', bar: 'bg-teal-500' }
+      default:
+        return { bg: 'bg-gray-50', border: 'border-gray-200', text: 'text-gray-600', bar: 'bg-gray-500' }
+    }
   }
 
   const categories = [
@@ -180,7 +187,7 @@ function MetaScoresCard({ scores, onInfoClick }: { scores: { thinking: number; f
   return (
     <div className="grid gap-4 md:grid-cols-3 mb-6">
       {categories.map((cat) => {
-        const colors = getScoreColor(cat.score)
+        const colors = getCategoryColors(cat.key)
         const percentage = (cat.score / maxScore) * 100
         return (
           <div key={cat.key} className={`${colors.bg} ${colors.border} border rounded-xl p-5`}>
@@ -240,8 +247,8 @@ function AssessmentResults({ results, onRedo }: { results: AssessmentResult; onR
         {/* Strengths */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
           <div className="flex items-center gap-2 mb-3">
-            <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-              <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-8 h-8 bg-teal-50 rounded-full flex items-center justify-center">
+              <svg className="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
@@ -260,7 +267,7 @@ function AssessmentResults({ results, onRedo }: { results: AssessmentResult; onR
                     <Info className="w-3.5 h-3.5" />
                   </button>
                 </div>
-                <span className="text-sm text-green-600 font-medium">
+                <span className="text-sm text-teal-600 font-medium">
                   {(results.pillar_scores[strength] || 0).toFixed(1)}/7
                 </span>
               </li>
@@ -271,8 +278,8 @@ function AssessmentResults({ results, onRedo }: { results: AssessmentResult; onR
         {/* Growth Areas */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
           <div className="flex items-center gap-2 mb-3">
-            <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
-              <svg className="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-8 h-8 bg-amber-50 rounded-full flex items-center justify-center">
+              <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
               </svg>
             </div>
@@ -291,7 +298,7 @@ function AssessmentResults({ results, onRedo }: { results: AssessmentResult; onR
                     <Info className="w-3.5 h-3.5" />
                   </button>
                 </div>
-                <span className="text-sm text-orange-600 font-medium">
+                <span className="text-sm text-amber-600 font-medium">
                   {(results.pillar_scores[area] || 0).toFixed(1)}/7
                 </span>
               </li>
@@ -334,12 +341,12 @@ function AssessmentResults({ results, onRedo }: { results: AssessmentResult; onR
                       </button>
                     </div>
                     {isStrength && (
-                      <span className="text-xs px-1.5 py-0.5 bg-green-100 text-green-700 rounded">
+                      <span className="text-xs px-1.5 py-0.5 bg-teal-50 text-teal-700 rounded">
                         Strength
                       </span>
                     )}
                     {isGrowth && (
-                      <span className="text-xs px-1.5 py-0.5 bg-orange-100 text-orange-700 rounded">
+                      <span className="text-xs px-1.5 py-0.5 bg-amber-50 text-amber-700 rounded">
                         Growth
                       </span>
                     )}
