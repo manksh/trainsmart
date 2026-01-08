@@ -4,15 +4,19 @@ Check-in query services.
 Provides reusable query functions for check-in data access patterns.
 """
 
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from typing import List, Optional, TypeVar, Generic
 from uuid import UUID
 
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from zoneinfo import ZoneInfo
 
 from app.models.checkin import CheckIn, CheckInType
+
+# Use Eastern Time for all date calculations
+EASTERN_TZ = ZoneInfo("America/New_York")
 
 
 class TodayCheckInsResult(BaseModel):
@@ -47,9 +51,17 @@ async def get_today_checkins(
     Returns:
         List of CheckIn records from today, ordered by created_at desc
     """
-    today = date.today()
-    start_of_day = datetime.combine(today, datetime.min.time())
-    end_of_day = datetime.combine(today, datetime.max.time())
+    # Get "today" in Eastern Time
+    now_eastern = datetime.now(EASTERN_TZ)
+    today = now_eastern.date()
+
+    # Create timezone-aware boundaries in Eastern Time, then convert to UTC for DB query
+    start_of_day_eastern = datetime.combine(today, datetime.min.time(), tzinfo=EASTERN_TZ)
+    end_of_day_eastern = datetime.combine(today, datetime.max.time(), tzinfo=EASTERN_TZ)
+
+    # Convert to UTC for database comparison (DB stores UTC timestamps)
+    start_of_day = start_of_day_eastern.astimezone(timezone.utc).replace(tzinfo=None)
+    end_of_day = end_of_day_eastern.astimezone(timezone.utc).replace(tzinfo=None)
 
     query = (
         select(CheckIn)

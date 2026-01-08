@@ -6,8 +6,9 @@ for getting today's check-ins, status, and checking if user has checked in.
 """
 
 import uuid
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta, date, timezone
 from typing import List
+from zoneinfo import ZoneInfo
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -18,7 +19,21 @@ from app.services.checkin import (
     get_today_checkin_status,
     has_checked_in_today,
     TodayCheckInsResult,
+    EASTERN_TZ,
 )
+
+
+def get_eastern_now_as_utc() -> datetime:
+    """Get current time in Eastern timezone, converted to naive UTC for DB storage."""
+    now_eastern = datetime.now(EASTERN_TZ)
+    return now_eastern.astimezone(timezone.utc).replace(tzinfo=None)
+
+
+def get_eastern_today_start_as_utc() -> datetime:
+    """Get start of today in Eastern timezone, converted to naive UTC for DB storage."""
+    now_eastern = datetime.now(EASTERN_TZ)
+    start_of_day_eastern = datetime.combine(now_eastern.date(), datetime.min.time(), tzinfo=EASTERN_TZ)
+    return start_of_day_eastern.astimezone(timezone.utc).replace(tzinfo=None)
 
 
 # === Fixture Helpers ===
@@ -31,13 +46,16 @@ async def create_checkin(
     created_at: datetime = None,
     **kwargs
 ) -> CheckIn:
-    """Helper to create a check-in with specified type and timestamp."""
+    """Helper to create a check-in with specified type and timestamp.
+
+    If created_at is not specified, uses current Eastern time converted to UTC.
+    """
     checkin = CheckIn(
         id=uuid.uuid4(),
         user_id=user.id,
         organization_id=org.id,
         check_in_type=check_in_type.value,
-        created_at=created_at or datetime.utcnow(),
+        created_at=created_at or get_eastern_now_as_utc(),
         **kwargs
     )
     db_session.add(checkin)
@@ -71,8 +89,8 @@ class TestGetTodayCheckins:
         organization: Organization,
     ):
         """Should return only check-ins from today, not from other days."""
-        # Create a check-in from yesterday
-        yesterday = datetime.utcnow() - timedelta(days=1)
+        # Create a check-in from yesterday (in Eastern Time terms)
+        yesterday = get_eastern_now_as_utc() - timedelta(days=1)
         await create_checkin(
             db_session, athlete_user, organization,
             CheckInType.MOOD, created_at=yesterday,
@@ -137,26 +155,30 @@ class TestGetTodayCheckins:
         organization: Organization,
     ):
         """Should return multiple check-ins ordered by most recent first."""
-        now = datetime.utcnow()
+        # Use a time that's definitely "today" in Eastern Time (midday)
+        now_eastern = datetime.now(EASTERN_TZ)
+        midday_eastern = datetime.combine(now_eastern.date(), datetime.min.time().replace(hour=12), tzinfo=EASTERN_TZ)
+        midday_utc = midday_eastern.astimezone(timezone.utc).replace(tzinfo=None)
 
-        # Create check-ins at different times today
+        # Create check-ins at different times today (all within the same Eastern day)
         earlier = await create_checkin(
             db_session, athlete_user, organization,
             CheckInType.BREATHING,
-            created_at=now - timedelta(hours=2),
+            created_at=midday_utc - timedelta(hours=2),
             breathing_exercise_type="energize", cycles_completed=12
         )
 
         later = await create_checkin(
             db_session, athlete_user, organization,
             CheckInType.BREATHING,
-            created_at=now - timedelta(hours=1),
+            created_at=midday_utc - timedelta(hours=1),
             breathing_exercise_type="relax", cycles_completed=4
         )
 
         most_recent = await create_checkin(
             db_session, athlete_user, organization,
             CheckInType.BREATHING,
+            created_at=midday_utc,
             breathing_exercise_type="focus", cycles_completed=10
         )
 
@@ -253,14 +275,15 @@ class TestGetTodayCheckins:
         athlete_user: User,
         organization: Organization,
     ):
-        """Should include check-ins from the very start of today."""
-        today = date.today()
-        start_of_day = datetime.combine(today, datetime.min.time())
+        """Should include check-ins from the very start of today in Eastern Time."""
+        now_eastern = datetime.now(EASTERN_TZ)
+        start_of_day_eastern = datetime.combine(now_eastern.date(), datetime.min.time(), tzinfo=EASTERN_TZ)
+        start_of_day_utc = start_of_day_eastern.astimezone(timezone.utc).replace(tzinfo=None)
 
         await create_checkin(
             db_session, athlete_user, organization,
             CheckInType.MOOD,
-            created_at=start_of_day,
+            created_at=start_of_day_utc,
             emotion="tired", intensity=2, body_areas=["head"]
         )
 
@@ -278,15 +301,20 @@ class TestGetTodayCheckins:
         athlete_user: User,
         organization: Organization,
     ):
-        """Should include check-ins from the very end of today."""
-        today = date.today()
-        # Use a time very close to end of day but still today
-        end_of_day = datetime.combine(today, datetime.max.time().replace(microsecond=0))
+        """Should include check-ins from the very end of today in Eastern Time."""
+        now_eastern = datetime.now(EASTERN_TZ)
+        # Use a time very close to end of day but still today (in Eastern Time)
+        end_of_day_eastern = datetime.combine(
+            now_eastern.date(),
+            datetime.max.time().replace(microsecond=0),
+            tzinfo=EASTERN_TZ
+        )
+        end_of_day_utc = end_of_day_eastern.astimezone(timezone.utc).replace(tzinfo=None)
 
         await create_checkin(
             db_session, athlete_user, organization,
             CheckInType.MOOD,
-            created_at=end_of_day,
+            created_at=end_of_day_utc,
             emotion="calm", intensity=4, body_areas=["chest"]
         )
 
@@ -404,7 +432,7 @@ class TestGetTodayCheckinStatus:
         organization: Organization,
     ):
         """Should not count check-ins from yesterday."""
-        yesterday = datetime.utcnow() - timedelta(days=1)
+        yesterday = get_eastern_now_as_utc() - timedelta(days=1)
 
         await create_checkin(
             db_session, athlete_user, organization,
