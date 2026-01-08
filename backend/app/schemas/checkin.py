@@ -37,7 +37,7 @@ class MoodCheckInCreate(BaseModel):
     emotion: str
     intensity: int = Field(..., ge=1, le=5)
     body_areas: List[str]
-    signal_resonated: Optional[str] = None
+    signals_resonated: Optional[List[str]] = []
     selected_action: Optional[str] = None
     notes: Optional[str] = None
 
@@ -50,7 +50,7 @@ class CheckInCreate(BaseModel):
     emotion: str
     intensity: int = Field(..., ge=1, le=5)
     body_areas: List[str]
-    signal_resonated: Optional[str] = None
+    signals_resonated: Optional[List[str]] = []
     selected_action: Optional[str] = None
     notes: Optional[str] = None
 
@@ -230,7 +230,7 @@ class CheckInOut(BaseModel):
     emotion: Optional[str] = None
     intensity: Optional[int] = None
     body_areas: Optional[List[str]] = None
-    signal_resonated: Optional[str] = None
+    signals_resonated: Optional[List[str]] = None
     selected_action: Optional[str] = None
     action_completed: Optional[bool] = None
     # Breathing fields

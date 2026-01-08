@@ -255,7 +255,7 @@ async def create_checkin(
         emotion=checkin.emotion,
         intensity=checkin.intensity,
         body_areas=checkin.body_areas,
-        signal_resonated=checkin.signal_resonated,
+        signals_resonated=checkin.signals_resonated,
         selected_action=checkin.selected_action,
         notes=checkin.notes,
     )

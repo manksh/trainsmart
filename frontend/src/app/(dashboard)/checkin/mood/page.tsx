@@ -104,7 +104,7 @@ export default function MoodCheckInPage() {
 
   // Form state
   const [selectedEmotion, setSelectedEmotion] = useState<string | null>(null)
-  const [selectedSignal, setSelectedSignal] = useState<string | null>(null)
+  const [selectedSignals, setSelectedSignals] = useState<string[]>([])
   const [intensity, setIntensity] = useState<number>(3)
   const [selectedBodyAreas, setSelectedBodyAreas] = useState<string[]>([])
   const [selectedAction, setSelectedAction] = useState<string | null>(null)
@@ -193,7 +193,7 @@ export default function MoodCheckInPage() {
         emotion: selectedEmotion,
         intensity,
         body_areas: selectedBodyAreas.length > 0 ? selectedBodyAreas : ['not_sure'],
-        signal_resonated: selectedSignal,
+        signals_resonated: selectedSignals,
         selected_action: selectedAction,
       })
       setStep('complete')
@@ -550,7 +550,7 @@ export default function MoodCheckInPage() {
                 You're feeling {selectedEmotionConfig.display_name}
               </h2>
               <p className="text-gray-500 text-sm mt-1">
-                Here are some signals you might notice
+                Select all the signals you notice
               </p>
             </div>
 
@@ -558,18 +558,24 @@ export default function MoodCheckInPage() {
               {selectedEmotionConfig.signals.map((signal) => (
                 <button
                   key={signal}
-                  onClick={() => setSelectedSignal(signal)}
+                  onClick={() => {
+                    if (selectedSignals.includes(signal)) {
+                      setSelectedSignals(selectedSignals.filter(s => s !== signal))
+                    } else {
+                      setSelectedSignals([...selectedSignals, signal])
+                    }
+                  }}
                   className={`w-full p-4 rounded-lg border-2 text-left transition-all ${
-                    selectedSignal === signal
+                    selectedSignals.includes(signal)
                       ? 'border-pink-600 bg-pink-50'
                       : 'border-gray-200 hover:border-gray-300 bg-white'
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                      selectedSignal === signal ? 'border-pink-600 bg-pink-600' : 'border-gray-300'
+                    <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                      selectedSignals.includes(signal) ? 'border-pink-600 bg-pink-600' : 'border-gray-300'
                     }`}>
-                      {selectedSignal === signal && (
+                      {selectedSignals.includes(signal) && (
                         <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                         </svg>
@@ -762,11 +768,11 @@ export default function MoodCheckInPage() {
                   {selectedEmotionConfig.display_name} ({intensity}/5)
                 </span>
               </div>
-              {selectedSignal && (
+              {selectedSignals.length > 0 && (
                 <div className="flex justify-between items-start">
-                  <span className="text-gray-500">Signal</span>
+                  <span className="text-gray-500">Signals</span>
                   <span className="font-medium text-gray-900 text-right max-w-[60%]">
-                    {selectedSignal}
+                    {selectedSignals.join(', ')}
                   </span>
                 </div>
               )}

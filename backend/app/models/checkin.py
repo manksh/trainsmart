@@ -583,8 +583,8 @@ class CheckIn(Base):
     # Body areas where emotion is felt (for mood check-ins)
     body_areas: Mapped[Optional[list]] = mapped_column(JSONB, nullable=True, default=list)
 
-    # Which signal resonated most (for mood check-ins)
-    signal_resonated: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    # Which signals resonated (for mood check-ins) - multi-select
+    signals_resonated: Mapped[Optional[list]] = mapped_column(JSONB, nullable=True, default=list)
 
     # Action they committed to (for mood check-ins)
     selected_action: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)

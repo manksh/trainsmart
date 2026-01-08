@@ -133,7 +133,7 @@ class TestCreateCheckIn:
                 "emotion": "happy",
                 "intensity": 4,
                 "body_areas": ["chest", "head"],
-                "signal_resonated": "Smiling or laughing easily",
+                "signals_resonated": ["Smiling or laughing easily", "Feeling light and energetic"],
                 "selected_action": "Share your happiness with a teammate",
             },
         )
@@ -143,7 +143,7 @@ class TestCreateCheckIn:
         assert data["emotion"] == "happy"
         assert data["intensity"] == 4
         assert data["body_areas"] == ["chest", "head"]
-        assert data["signal_resonated"] == "Smiling or laughing easily"
+        assert data["signals_resonated"] == ["Smiling or laughing easily", "Feeling light and energetic"]
         assert data["selected_action"] == "Share your happiness with a teammate"
 
     @pytest.mark.asyncio
@@ -169,6 +169,62 @@ class TestCreateCheckIn:
         data = response.json()
         assert data["emotion"] == "calm"
         assert data["intensity"] == 3
+        # signals_resonated should default to empty list
+        assert data["signals_resonated"] == []
+
+    @pytest.mark.asyncio
+    async def test_create_checkin_multi_select_signals(
+        self,
+        client: AsyncClient,
+        athlete_token: str,
+        organization: Organization,
+    ):
+        """Should support multi-select signals (KAN-89)."""
+        signals = [
+            "Smiling or laughing easily",
+            "Feeling light and energetic",
+            "Wanting to connect with others"
+        ]
+        response = await client.post(
+            "/api/v1/checkins",
+            headers=auth_headers(athlete_token),
+            json={
+                "organization_id": str(organization.id),
+                "emotion": "happy",
+                "intensity": 5,
+                "body_areas": ["chest", "head"],
+                "signals_resonated": signals,
+            },
+        )
+
+        assert response.status_code == 201
+        data = response.json()
+        assert data["signals_resonated"] == signals
+        assert len(data["signals_resonated"]) == 3
+
+    @pytest.mark.asyncio
+    async def test_create_checkin_empty_signals_list(
+        self,
+        client: AsyncClient,
+        athlete_token: str,
+        organization: Organization,
+    ):
+        """Should accept empty signals list."""
+        response = await client.post(
+            "/api/v1/checkins",
+            headers=auth_headers(athlete_token),
+            json={
+                "organization_id": str(organization.id),
+                "emotion": "nervous",
+                "intensity": 3,
+                "body_areas": ["stomach"],
+                "signals_resonated": [],
+            },
+        )
+
+        assert response.status_code == 201
+        data = response.json()
+        assert data["signals_resonated"] == []
 
     @pytest.mark.asyncio
     async def test_create_checkin_invalid_emotion(

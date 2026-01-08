@@ -52,7 +52,7 @@ async def create_checkin_record(
             emotion=data.emotion,
             intensity=data.intensity,
             body_areas=data.body_areas,
-            signal_resonated=data.signal_resonated,
+            signals_resonated=data.signals_resonated,
             selected_action=data.selected_action,
             notes=data.notes,
         )
