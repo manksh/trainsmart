@@ -178,16 +178,6 @@ const colorMapping: Record<string, { text: string; bg: string }> = {
 // Placeholder modules for upcoming features
 const PLACEHOLDER_MODULES: TrainItem[] = [
   {
-    id: 'confidence-building',
-    name: 'Building Confidence',
-    description: 'Build unshakeable self-belief',
-    icon: moduleIcons.trophy,
-    color: 'text-amber-600',
-    bgColor: 'bg-amber-100',
-    route: '/train/confidence',
-    isPlaceholder: true,
-  },
-  {
     id: 'focus-attention',
     name: 'Focus & Attention',
     description: 'Sharpen your concentration',
@@ -673,8 +663,13 @@ export default function HomePage() {
               isPlaceholder: false,
             }
           })
-          // Combine API modules with placeholder modules
-          setTrainingModules([...apiModules, ...PLACEHOLDER_MODULES])
+          // Filter out placeholders that match real modules by name (case-insensitive)
+          const realModuleNames = new Set(apiModules.map(m => m.name.toLowerCase()))
+          const filteredPlaceholders = PLACEHOLDER_MODULES.filter(
+            p => !realModuleNames.has(p.name.toLowerCase())
+          )
+          // Combine API modules with filtered placeholder modules
+          setTrainingModules([...apiModules, ...filteredPlaceholders])
         }
 
         // If assessment is completed, fetch the results for meta scores

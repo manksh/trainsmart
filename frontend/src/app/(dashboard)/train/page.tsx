@@ -196,17 +196,6 @@ export default function TrainPage() {
         // Add placeholder modules for upcoming features
         const placeholderModules: TrainItem[] = [
           {
-            id: 'confidence-building',
-            title: 'Building Confidence',
-            description: 'Learn techniques to build and maintain confidence in high-pressure situations.',
-            icon: moduleIcons.trophy,
-            color: 'text-amber-600',
-            bgColor: 'bg-amber-100',
-            route: '/train/confidence',
-            isPlaceholder: true,
-            badge: 'Coming soon',
-          },
-          {
             id: 'focus-attention',
             title: 'Focus & Attention',
             description: 'Train your ability to maintain focus and redirect attention when distracted.',
@@ -219,19 +208,25 @@ export default function TrainPage() {
           },
         ]
 
-        setModules([...apiModules, ...placeholderModules])
+        // Filter out placeholders that match real modules by name (case-insensitive)
+        const realModuleNames = new Set(apiModules.map(m => m.title.toLowerCase()))
+        const filteredPlaceholders = placeholderModules.filter(
+          p => !realModuleNames.has(p.title.toLowerCase())
+        )
+
+        setModules([...apiModules, ...filteredPlaceholders])
       } catch (err) {
         console.error('Failed to load modules:', err)
         // Set placeholder modules on error
         setModules([
           {
-            id: 'confidence-building',
-            title: 'Building Confidence',
-            description: 'Learn techniques to build and maintain confidence in high-pressure situations.',
-            icon: moduleIcons.trophy,
-            color: 'text-amber-600',
-            bgColor: 'bg-amber-100',
-            route: '/train/confidence',
+            id: 'focus-attention',
+            title: 'Focus & Attention',
+            description: 'Train your ability to maintain focus and redirect attention when distracted.',
+            icon: moduleIcons.target,
+            color: 'text-blue-600',
+            bgColor: 'bg-blue-100',
+            route: '/train/focus',
             isPlaceholder: true,
             badge: 'Coming soon',
           },
