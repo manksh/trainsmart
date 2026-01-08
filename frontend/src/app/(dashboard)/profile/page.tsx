@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Info } from 'lucide-react'
+import { Info, Brain, Heart, Zap } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { apiGet, apiDelete } from '@/lib/api'
 import { MPA_DEFINITIONS, MPADimension } from '@/lib/mpaDefinitions'
@@ -179,9 +179,9 @@ function MetaScoresCard({ scores, onInfoClick }: { scores: { thinking: number; f
   }
 
   const categories = [
-    { key: 'thinking', label: 'Thinking', description: 'Mental clarity, focus & self-talk', icon: '🧠', score: scores.thinking },
-    { key: 'feeling', label: 'Feeling', description: 'Emotional awareness & regulation', icon: '💚', score: scores.feeling },
-    { key: 'acting', label: 'Acting', description: 'Behavioral habits & resilience', icon: '⚡', score: scores.action },
+    { key: 'thinking', label: 'Thinking', description: 'Mental clarity, focus & self-talk', icon: Brain, iconColor: 'text-slate-600', score: scores.thinking },
+    { key: 'feeling', label: 'Feeling', description: 'Emotional awareness & regulation', icon: Heart, iconColor: 'text-amber-600', score: scores.feeling },
+    { key: 'acting', label: 'Acting', description: 'Behavioral habits & resilience', icon: Zap, iconColor: 'text-teal-600', score: scores.action },
   ]
 
   return (
@@ -192,7 +192,7 @@ function MetaScoresCard({ scores, onInfoClick }: { scores: { thinking: number; f
         return (
           <div key={cat.key} className={`${colors.bg} ${colors.border} border rounded-xl p-5`}>
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-2xl">{cat.icon}</span>
+              <cat.icon className={`w-6 h-6 ${cat.iconColor}`} />
               <div className="flex-1">
                 <div className="flex items-center gap-1">
                   <h4 className="font-semibold text-gray-900">{cat.label}</h4>

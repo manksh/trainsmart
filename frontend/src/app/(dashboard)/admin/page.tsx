@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { Brain, Heart, Zap, LucideIcon } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { apiGet, apiPost } from '@/lib/api'
 import { Button } from '@/components/ui/button'
@@ -32,11 +33,21 @@ interface Athlete {
   growth_areas: string[] | null
 }
 
+const META_ICONS: Record<string, { icon: LucideIcon; color: string }> = {
+  thinking: { icon: Brain, color: 'text-slate-600' },
+  feeling: { icon: Heart, color: 'text-amber-600' },
+  action: { icon: Zap, color: 'text-teal-600' },
+}
+
 function MetaScoreBadge({ category, score }: { category: string; score: number }) {
   const meta = META_CATEGORIES[category as MetaCategoryKey]
   const colors = meta || { bg: 'bg-gray-100', text: 'text-gray-700', name: category }
+  const iconData = META_ICONS[category]
+  const IconComponent = iconData?.icon
+
   return (
     <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-md ${colors.bg}`}>
+      {IconComponent && <IconComponent className={`w-3.5 h-3.5 ${iconData.color}`} />}
       <span className={`text-xs font-medium ${colors.text}`}>
         {meta?.name || category}
       </span>

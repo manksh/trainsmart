@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { Brain, Heart, Zap } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { apiGet, apiDelete } from '@/lib/api'
 import { ExpandableSection, GroupedExpandableSection, ExpandableSectionOption } from '@/components/ui/ExpandableSection'
@@ -552,9 +553,9 @@ function MentalPerformanceScores({ scores, onViewProfile }: {
   }
 
   const categories = [
-    { key: 'thinking', label: 'Thinking', icon: '🧠', score: scores.thinking },
-    { key: 'feeling', label: 'Feeling', icon: '💚', score: scores.feeling },
-    { key: 'action', label: 'Acting', icon: '⚡', score: scores.action },
+    { key: 'thinking', label: 'Thinking', icon: Brain, iconColor: 'text-slate-600', score: scores.thinking },
+    { key: 'feeling', label: 'Feeling', icon: Heart, iconColor: 'text-amber-600', score: scores.feeling },
+    { key: 'action', label: 'Acting', icon: Zap, iconColor: 'text-teal-600', score: scores.action },
   ]
 
   return (
@@ -574,7 +575,7 @@ function MentalPerformanceScores({ scores, onViewProfile }: {
           const percentage = (cat.score / maxScore) * 100
           return (
             <div key={cat.key} className="flex items-center gap-3">
-              <span className="text-lg w-6">{cat.icon}</span>
+              <cat.icon className={`w-5 h-5 ${cat.iconColor}`} />
               <div className="flex-1">
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-sm font-medium text-gray-700">{cat.label}</span>

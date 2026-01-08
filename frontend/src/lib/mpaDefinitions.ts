@@ -269,11 +269,11 @@ export type MetaCategoryKey = (typeof META_CATEGORY_KEYS)[number]
 /** Meta category display configuration - Option A: Muted Naturals */
 export const META_CATEGORIES: Record<
   MetaCategoryKey,
-  { name: string; bg: string; text: string }
+  { name: string; bg: string; text: string; iconName: 'Brain' | 'Heart' | 'Zap' }
 > = {
-  thinking: { name: 'Thinking', bg: 'bg-slate-100', text: 'text-slate-700' },
-  feeling: { name: 'Feeling', bg: 'bg-amber-50', text: 'text-amber-700' },
-  action: { name: 'Action', bg: 'bg-teal-50', text: 'text-teal-700' },
+  thinking: { name: 'Thinking', bg: 'bg-slate-100', text: 'text-slate-700', iconName: 'Brain' },
+  feeling: { name: 'Feeling', bg: 'bg-amber-50', text: 'text-amber-700', iconName: 'Heart' },
+  action: { name: 'Action', bg: 'bg-teal-50', text: 'text-teal-700', iconName: 'Zap' },
 }
 
 // Helper to get category display name
