@@ -307,10 +307,10 @@ BREATHING_CONFIG = {
         },
         "cycles": 12,  # 10-15 recommended, default to 12
         "instructions": [
-            "Breathe in deeply through your nose",
+            "Quickly & actively breathe in deeply through your nose",
             "Exhale quickly through your mouth",
             "Repeat with a steady rhythm",
-            "Feel the energy building",
+            "Feel the energy build!",
         ],
         "category": "activation",
     },
@@ -358,8 +358,8 @@ BREATHING_CONFIG = {
         },
         "cycles": 3,
         "instructions": [
-            "Take a deep breath in through your nose",
-            "Take a second short breath to fully fill lungs",
+            "Take a quick deep inhale in through your nose",
+            "Take a second short inhale to fully fill your lungs",
             "Exhale slowly through your mouth",
             "Feel the tension release",
         ],

@@ -542,7 +542,7 @@ export default function BreathingCheckInPage() {
               disabled={isSubmitting}
               className="w-full bg-cyan-600 hover:bg-cyan-700"
             >
-              {isSubmitting ? 'Saving...' : 'Complete Check-in'}
+              {isSubmitting ? 'Saving...' : 'Complete Breathing'}
             </Button>
           </div>
         )}
