@@ -161,7 +161,7 @@ function SignupFormComponent() {
             </h1>
           </div>
           <p className="text-sage-100 text-lg lg:text-xl font-medium">
-            Train your mind like you train your body
+            Train your mind. Own your performance.
           </p>
         </div>
 
@@ -210,7 +210,7 @@ function SignupFormComponent() {
             </h1>
           </div>
           <p className="text-sage-100 text-lg lg:text-xl font-medium">
-            Train your mind like you train your body
+            Train your mind. Own your performance.
           </p>
         </div>
 
