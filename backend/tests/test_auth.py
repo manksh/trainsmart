@@ -16,7 +16,7 @@ class TestPasswordHashing:
 
     def test_hash_password_creates_hash(self):
         """Password hashing should create a valid bcrypt hash."""
-        password = "SecurePassword123!"
+        password = "Secure12!"
         hashed = hash_password(password)
 
         assert hashed != password
@@ -24,22 +24,22 @@ class TestPasswordHashing:
 
     def test_verify_password_correct(self):
         """Correct password should verify successfully."""
-        password = "SecurePassword123!"
+        password = "Secure12!"
         hashed = hash_password(password)
 
         assert verify_password(password, hashed) is True
 
     def test_verify_password_incorrect(self):
         """Incorrect password should fail verification."""
-        password = "SecurePassword123!"
-        wrong_password = "WrongPassword456!"
+        password = "Secure12!"
+        wrong_password = "Wrong456!"
         hashed = hash_password(password)
 
         assert verify_password(wrong_password, hashed) is False
 
     def test_same_password_different_hashes(self):
         """Same password should produce different hashes (salt)."""
-        password = "SecurePassword123!"
+        password = "Secure12!"
         hash1 = hash_password(password)
         hash2 = hash_password(password)
 
@@ -103,7 +103,7 @@ class TestLoginEndpoint:
             "/api/v1/auth/login",
             json={
                 "email": "superadmin@test.com",
-                "password": "SuperSecret123!",
+                "password": "Super123!",
             },
         )
 
@@ -123,7 +123,7 @@ class TestLoginEndpoint:
             "/api/v1/auth/login",
             json={
                 "email": "superadmin@test.com",
-                "password": "WrongPassword!",
+                "password": "Wrong123!",
             },
         )
 
@@ -137,7 +137,7 @@ class TestLoginEndpoint:
             "/api/v1/auth/login",
             json={
                 "email": "nonexistent@test.com",
-                "password": "SomePassword123!",
+                "password": "Some1234!",
             },
         )
 
@@ -152,7 +152,7 @@ class TestLoginEndpoint:
             "/api/v1/auth/login",
             json={
                 "email": "inactive@test.com",
-                "password": "InactivePass123!",
+                "password": "Inact123!",
             },
         )
 
@@ -168,7 +168,7 @@ class TestLoginEndpoint:
             "/api/v1/auth/login",
             json={
                 "email": "SUPERADMIN@TEST.COM",
-                "password": "SuperSecret123!",
+                "password": "Super123!",
             },
         )
 
@@ -288,7 +288,7 @@ class TestSuperadminRegistration:
             "/api/v1/auth/register/superadmin",
             json={
                 "email": "another@admin.com",
-                "password": "AnotherPass123!",
+                "password": "Anoth123!",
                 "first_name": "Another",
                 "last_name": "Admin",
             },

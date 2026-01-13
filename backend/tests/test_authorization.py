@@ -152,7 +152,7 @@ class TestOrganizationIsolation:
         user = User(
             id=uuid.uuid4(),
             email="admin2@test.com",
-            password_hash=hash_password("Admin2Pass123!"),
+            password_hash=hash_password("Admin2@1!"),
             first_name="Second",
             last_name="Admin",
             is_superadmin=False,
@@ -378,7 +378,7 @@ class TestMembershipRequired:
         user = User(
             id=uuid.uuid4(),
             email="nomember@test.com",
-            password_hash=hash_password("NoMemberPass123!"),
+            password_hash=hash_password("NoMemb1!"),
             first_name="No",
             last_name="Member",
             is_superadmin=False,

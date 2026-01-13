@@ -92,7 +92,7 @@ async def superadmin_user(db_session: AsyncSession) -> User:
     user = User(
         id=uuid.uuid4(),
         email="superadmin@test.com",
-        password_hash=hash_password("SuperSecret123!"),
+        password_hash=hash_password("Super123!"),
         first_name="Super",
         last_name="Admin",
         is_superadmin=True,
@@ -126,7 +126,7 @@ async def admin_user(db_session: AsyncSession, organization: Organization) -> Us
     user = User(
         id=uuid.uuid4(),
         email="admin@test.com",
-        password_hash=hash_password("AdminPass123!"),
+        password_hash=hash_password("Admin123!"),
         first_name="Club",
         last_name="Admin",
         is_superadmin=False,
@@ -156,7 +156,7 @@ async def athlete_user(db_session: AsyncSession, organization: Organization) -> 
     user = User(
         id=uuid.uuid4(),
         email="athlete@test.com",
-        password_hash=hash_password("AthletePass123!"),
+        password_hash=hash_password("Athlet123!"),
         first_name="Test",
         last_name="Athlete",
         is_superadmin=False,
@@ -186,7 +186,7 @@ async def inactive_user(db_session: AsyncSession) -> User:
     user = User(
         id=uuid.uuid4(),
         email="inactive@test.com",
-        password_hash=hash_password("InactivePass123!"),
+        password_hash=hash_password("Inact123!"),
         first_name="Inactive",
         last_name="User",
         is_superadmin=False,

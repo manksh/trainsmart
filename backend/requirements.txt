@@ -24,6 +24,9 @@ resend==0.7.0
 # Utilities
 python-dotenv==1.0.0
 
+# Rate Limiting
+slowapi==0.1.9
+
 # Testing
 pytest==7.4.4
 pytest-asyncio==0.23.3

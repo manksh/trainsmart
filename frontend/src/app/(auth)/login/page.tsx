@@ -1,12 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useAuth } from '@/hooks/useAuth'
+import { ApiError } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
@@ -62,11 +63,46 @@ const featureCards = [
   },
 ]
 
+/** Format seconds into "X minutes" or "X seconds" */
+function formatRetryTime(seconds: number): string {
+  if (seconds >= 60) {
+    const minutes = Math.ceil(seconds / 60)
+    return `${minutes} minute${minutes !== 1 ? 's' : ''}`
+  }
+  return `${seconds} second${seconds !== 1 ? 's' : ''}`
+}
+
 export default function LoginPage() {
   const router = useRouter()
   const { login } = useAuth()
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [failedAttempts, setFailedAttempts] = useState(0)
+  const [retryAfterSeconds, setRetryAfterSeconds] = useState<number | null>(null)
+  const [isRateLimited, setIsRateLimited] = useState(false)
+
+  // Countdown timer for rate limiting
+  useEffect(() => {
+    if (retryAfterSeconds === null || retryAfterSeconds <= 0) {
+      if (isRateLimited) {
+        setIsRateLimited(false)
+        setRetryAfterSeconds(null)
+        setError(null)
+      }
+      return
+    }
+
+    const timer = setInterval(() => {
+      setRetryAfterSeconds((prev) => {
+        if (prev === null || prev <= 1) {
+          return null
+        }
+        return prev - 1
+      })
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [retryAfterSeconds, isRateLimited])
 
   const {
     register,
@@ -77,15 +113,33 @@ export default function LoginPage() {
   })
 
   const onSubmit = async (data: LoginForm) => {
+    // Don't allow submission if rate limited
+    if (isRateLimited) return
+
     setError(null)
     setIsLoading(true)
 
     try {
       await login(data.email, data.password)
+      // Reset failed attempts on success
+      setFailedAttempts(0)
       // Redirect based on role will be handled by dashboard
       router.push('/dashboard')
-    } catch (err: any) {
-      setError(err.data?.detail || 'Invalid email or password')
+    } catch (err: unknown) {
+      // Handle rate limiting (429)
+      if (err instanceof ApiError && err.status === 429) {
+        setIsRateLimited(true)
+        // Use Retry-After header if available, otherwise default to 60 seconds
+        const waitTime = err.retryAfter || 60
+        setRetryAfterSeconds(waitTime)
+        setError(`Too many login attempts. Please wait ${formatRetryTime(waitTime)} and try again.`)
+      } else {
+        // Increment failed attempts for non-rate-limit errors
+        setFailedAttempts((prev) => prev + 1)
+        const apiErr = err as ApiError
+        const errorData = apiErr.data as { detail?: string } | undefined
+        setError(errorData?.detail || 'Invalid email or password')
+      }
     } finally {
       setIsLoading(false)
     }
@@ -154,12 +208,76 @@ export default function LoginPage() {
           </div>
 
           <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
-            {error && (
+            {/* Rate limit warning with countdown */}
+            {isRateLimited && retryAfterSeconds !== null && (
+              <div
+                className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-lg text-sm"
+                role="alert"
+              >
+                <div className="flex items-start gap-3">
+                  <svg
+                    className="w-5 h-5 flex-shrink-0 mt-0.5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  <div>
+                    <p className="font-medium">Too many login attempts</p>
+                    <p className="mt-1">
+                      Please wait {formatRetryTime(retryAfterSeconds)} before trying again.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Standard error message */}
+            {error && !isRateLimited && (
               <div
                 className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm"
                 role="alert"
               >
                 {error}
+              </div>
+            )}
+
+            {/* Password reset suggestion after multiple failures */}
+            {failedAttempts >= 3 && !isRateLimited && (
+              <div
+                className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-lg text-sm"
+                role="status"
+              >
+                <div className="flex items-start gap-3">
+                  <svg
+                    className="w-5 h-5 flex-shrink-0 mt-0.5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  <div>
+                    <p className="font-medium">Having trouble signing in?</p>
+                    <p className="mt-1">
+                      If you have forgotten your password, please contact your administrator
+                      to reset it.
+                    </p>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -213,8 +331,8 @@ export default function LoginPage() {
 
             <Button
               type="submit"
-              className="w-full bg-sage-700 hover:bg-sage-800 text-sage-50 focus:ring-sage-400 focus:ring-offset-2"
-              disabled={isLoading}
+              className="w-full bg-sage-700 hover:bg-sage-800 text-sage-50 focus:ring-sage-400 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isLoading || isRateLimited}
             >
               {isLoading ? (
                 <span className="flex items-center justify-center gap-2">
@@ -241,6 +359,8 @@ export default function LoginPage() {
                   </svg>
                   Signing in...
                 </span>
+              ) : isRateLimited && retryAfterSeconds !== null ? (
+                `Wait ${formatRetryTime(retryAfterSeconds)}`
               ) : (
                 'Sign in'
               )}

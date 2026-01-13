@@ -11,12 +11,36 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 
+/** Password validation requirements */
+const PASSWORD_REQUIREMENTS = {
+  minLength: 8,
+  maxLength: 12,
+  hasLetter: /[a-zA-Z]/,
+  hasNumber: /\d/,
+  hasSpecial: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/,
+}
+
+/** Validate password and return which requirements are met */
+function validatePasswordRequirements(password: string) {
+  return {
+    length: password.length >= PASSWORD_REQUIREMENTS.minLength && password.length <= PASSWORD_REQUIREMENTS.maxLength,
+    hasLetter: PASSWORD_REQUIREMENTS.hasLetter.test(password),
+    hasNumber: PASSWORD_REQUIREMENTS.hasNumber.test(password),
+    hasSpecial: PASSWORD_REQUIREMENTS.hasSpecial.test(password),
+  }
+}
+
 const signupSchema = z.object({
   invite_code: z.string().min(1, 'Invite code is required'),
   email: z.string().email('Invalid email address'),
   first_name: z.string().min(1, 'First name is required'),
   last_name: z.string().min(1, 'Last name is required'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
+  password: z.string()
+    .min(PASSWORD_REQUIREMENTS.minLength, `Password must be at least ${PASSWORD_REQUIREMENTS.minLength} characters`)
+    .max(PASSWORD_REQUIREMENTS.maxLength, `Password must be at most ${PASSWORD_REQUIREMENTS.maxLength} characters`)
+    .regex(PASSWORD_REQUIREMENTS.hasLetter, 'Password must contain at least one letter')
+    .regex(PASSWORD_REQUIREMENTS.hasNumber, 'Password must contain at least one number')
+    .regex(PASSWORD_REQUIREMENTS.hasSpecial, 'Password must contain at least one special character'),
   confirm_password: z.string(),
 }).refine((data) => data.password === data.confirm_password, {
   message: "Passwords don't match",
@@ -31,6 +55,84 @@ interface InviteValidation {
   organization_name?: string
   role?: string
   message?: string
+}
+
+/** Check icon for met requirements */
+function CheckIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 20 20"
+      fill="currentColor"
+      aria-hidden="true"
+    >
+      <path
+        fillRule="evenodd"
+        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+        clipRule="evenodd"
+      />
+    </svg>
+  )
+}
+
+/** X icon for unmet requirements */
+function XIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 20 20"
+      fill="currentColor"
+      aria-hidden="true"
+    >
+      <path
+        fillRule="evenodd"
+        d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+        clipRule="evenodd"
+      />
+    </svg>
+  )
+}
+
+/** Password requirements checklist with real-time validation */
+function PasswordRequirementsChecklist({ password }: { password: string }) {
+  const requirements = validatePasswordRequirements(password)
+  const hasStartedTyping = password.length > 0
+
+  const items = [
+    { key: 'length', label: `8-12 characters`, met: requirements.length },
+    { key: 'hasLetter', label: 'At least one letter (a-z, A-Z)', met: requirements.hasLetter },
+    { key: 'hasNumber', label: 'At least one number (0-9)', met: requirements.hasNumber },
+    { key: 'hasSpecial', label: 'At least one special character (!@#$...)', met: requirements.hasSpecial },
+  ]
+
+  return (
+    <div className="mt-2 p-3 bg-sage-50 border border-sage-200 rounded-lg" role="status" aria-live="polite">
+      <p className="text-xs font-medium text-sage-700 mb-2">Password requirements:</p>
+      <ul className="space-y-1">
+        {items.map((item) => (
+          <li
+            key={item.key}
+            className={`flex items-center gap-2 text-xs ${
+              !hasStartedTyping
+                ? 'text-sage-500'
+                : item.met
+                ? 'text-green-600'
+                : 'text-red-600'
+            }`}
+          >
+            {!hasStartedTyping ? (
+              <span className="w-4 h-4 rounded-full border border-sage-300 flex-shrink-0" aria-hidden="true" />
+            ) : item.met ? (
+              <CheckIcon className="w-4 h-4 flex-shrink-0" />
+            ) : (
+              <XIcon className="w-4 h-4 flex-shrink-0" />
+            )}
+            <span>{item.label}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
 }
 
 /** Lightning bolt icon for CTLST Labs branding */
@@ -100,6 +202,7 @@ function SignupFormComponent() {
   })
 
   const inviteCode = watch('invite_code')
+  const passwordValue = watch('password') || ''
 
   // Validate invite code
   useEffect(() => {
@@ -393,9 +496,10 @@ function SignupFormComponent() {
                   autoComplete="new-password"
                   {...register('password')}
                   className="w-full border-sage-200 focus:border-sage-400 focus:ring-sage-400"
-                  placeholder="At least 8 characters"
-                  aria-describedby={errors.password ? 'password-error' : undefined}
+                  placeholder="8-12 characters"
+                  aria-describedby="password-requirements password-error"
                 />
+                <PasswordRequirementsChecklist password={passwordValue} />
                 {errors.password && (
                   <p id="password-error" className="mt-1.5 text-sm text-red-600">
                     {errors.password.message}

@@ -1,7 +1,15 @@
+import re
 from typing import List, Optional
-from pydantic import BaseModel, EmailStr, ConfigDict
+from pydantic import BaseModel, EmailStr, ConfigDict, field_validator
 from datetime import datetime
 from uuid import UUID
+
+
+# Password policy constants
+PASSWORD_MIN_LENGTH = 8
+PASSWORD_MAX_LENGTH = 12
+# Extended special characters to match frontend validation
+PASSWORD_SPECIAL_CHARS = r'!@#$%^&*()_+\-=\[\]{};\':"\\|,.<>\/?'
 
 
 # Base schemas
@@ -13,6 +21,46 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str
+
+    @field_validator("password")
+    @classmethod
+    def validate_password(cls, v: str) -> str:
+        """
+        Validate password meets security requirements:
+        - Minimum 8 characters
+        - Maximum 12 characters
+        - At least one letter (uppercase or lowercase)
+        - At least one number
+        - At least one special character
+        """
+        errors = []
+
+        # Check minimum length
+        if len(v) < PASSWORD_MIN_LENGTH:
+            errors.append(f"Password must be at least {PASSWORD_MIN_LENGTH} characters")
+
+        # Check maximum length
+        if len(v) > PASSWORD_MAX_LENGTH:
+            errors.append(f"Password must be at most {PASSWORD_MAX_LENGTH} characters")
+
+        # Check for at least one letter
+        if not re.search(r"[a-zA-Z]", v):
+            errors.append("Password must contain at least one letter")
+
+        # Check for at least one number
+        if not re.search(r"\d", v):
+            errors.append("Password must contain at least one number")
+
+        # Check for at least one special character
+        if not re.search(rf"[{re.escape(PASSWORD_SPECIAL_CHARS)}]", v):
+            errors.append(
+                f"Password must contain at least one special character ({PASSWORD_SPECIAL_CHARS})"
+            )
+
+        if errors:
+            raise ValueError("; ".join(errors))
+
+        return v
 
 
 class UserCreateWithInvite(UserCreate):

@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
+from app.rate_limiter import limiter
 from app.schemas import (
     LoginRequest,
     LoginResponse,
@@ -15,7 +16,9 @@ router = APIRouter()
 
 
 @router.post("/login", response_model=LoginResponse)
+@limiter.limit("5/minute")
 async def login(
+    request: Request,
     login_data: LoginRequest,
     db: AsyncSession = Depends(get_db),
 ):
@@ -51,7 +54,9 @@ async def login(
 
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("3/minute")
 async def register_with_invite(
+    request: Request,
     user_data: UserCreateWithInvite,
     db: AsyncSession = Depends(get_db),
 ):
@@ -77,7 +82,9 @@ async def register_with_invite(
 
 
 @router.post("/register/superadmin", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("1/minute")
 async def register_superadmin(
+    request: Request,
     user_data: UserCreate,
     db: AsyncSession = Depends(get_db),
 ):

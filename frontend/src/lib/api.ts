@@ -11,15 +11,22 @@ interface ApiOptions {
 }
 
 class ApiError extends Error {
+  /** Retry-After header value in seconds (for 429 responses) */
+  public retryAfter?: number
+
   constructor(
     public status: number,
     public statusText: string,
-    public data?: unknown
+    public data?: unknown,
+    retryAfter?: number
   ) {
     super(`API Error: ${status} ${statusText}`)
     this.name = 'ApiError'
+    this.retryAfter = retryAfter
   }
 }
+
+export { ApiError }
 
 async function getToken(): Promise<string | null> {
   if (typeof window === 'undefined') return null
@@ -51,7 +58,27 @@ export async function api<T>(
 
   if (!response.ok) {
     const data = await response.json().catch(() => null)
-    throw new ApiError(response.status, response.statusText, data)
+
+    // Parse Retry-After header for 429 responses
+    let retryAfter: number | undefined
+    if (response.status === 429) {
+      const retryAfterHeader = response.headers.get('Retry-After')
+      if (retryAfterHeader) {
+        // Retry-After can be seconds (integer) or HTTP-date
+        const parsed = parseInt(retryAfterHeader, 10)
+        if (!isNaN(parsed)) {
+          retryAfter = parsed
+        } else {
+          // Try parsing as HTTP-date
+          const date = new Date(retryAfterHeader)
+          if (!isNaN(date.getTime())) {
+            retryAfter = Math.max(0, Math.ceil((date.getTime() - Date.now()) / 1000))
+          }
+        }
+      }
+    }
+
+    throw new ApiError(response.status, response.statusText, data, retryAfter)
   }
 
   return response.json()
