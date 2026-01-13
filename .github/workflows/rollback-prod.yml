@@ -1,0 +1,148 @@
+name: Rollback PROD
+
+on:
+  workflow_dispatch:
+    inputs:
+      service:
+        description: 'Service to rollback'
+        required: true
+        type: choice
+        options:
+          - backend
+          - frontend
+          - both
+      revision:
+        description: 'Revision to rollback to (leave empty for previous revision)'
+        required: false
+        type: string
+      confirm:
+        description: 'Type ROLLBACK to confirm'
+        required: true
+        type: string
+
+env:
+  PROJECT_ID: trainsmart-481620
+  REGION: us-central1
+  BACKEND_SERVICE: trainsmart-backend-prod
+  FRONTEND_SERVICE: trainsmart-frontend-prod
+  WORKLOAD_IDENTITY_PROVIDER: projects/922138784988/locations/global/workloadIdentityPools/github-pool/providers/github-provider
+  SERVICE_ACCOUNT: github-actions@trainsmart-481620.iam.gserviceaccount.com
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate confirmation
+        if: ${{ github.event.inputs.confirm != 'ROLLBACK' }}
+        run: |
+          echo "❌ Rollback cancelled. You must type 'ROLLBACK' to confirm."
+          exit 1
+      - name: Confirmation accepted
+        run: echo "✅ Rollback confirmed for ${{ github.event.inputs.service }}"
+
+  rollback-backend:
+    needs: validate
+    if: ${{ github.event.inputs.service == 'backend' || github.event.inputs.service == 'both' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Get revision to rollback to
+        id: get-revision
+        run: |
+          if [ -n "${{ github.event.inputs.revision }}" ]; then
+            REVISION="${{ github.event.inputs.revision }}"
+          else
+            # Get the second-to-last revision (previous one)
+            REVISION=$(gcloud run revisions list \
+              --service ${{ env.BACKEND_SERVICE }} \
+              --region ${{ env.REGION }} \
+              --format="value(REVISION)" \
+              --sort-by="~creationTimestamp" \
+              --limit=2 | tail -1)
+          fi
+          echo "Rolling back to revision: $REVISION"
+          echo "revision=$REVISION" >> $GITHUB_OUTPUT
+
+      - name: Rollback backend
+        run: |
+          gcloud run services update-traffic ${{ env.BACKEND_SERVICE }} \
+            --region ${{ env.REGION }} \
+            --to-revisions=${{ steps.get-revision.outputs.revision }}=100
+
+      - name: Verify rollback
+        run: |
+          echo "Backend rolled back to: ${{ steps.get-revision.outputs.revision }}"
+          gcloud run services describe ${{ env.BACKEND_SERVICE }} \
+            --region ${{ env.REGION }} \
+            --format="value(status.traffic)"
+
+  rollback-frontend:
+    needs: validate
+    if: ${{ github.event.inputs.service == 'frontend' || github.event.inputs.service == 'both' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Get revision to rollback to
+        id: get-revision
+        run: |
+          if [ -n "${{ github.event.inputs.revision }}" ]; then
+            REVISION="${{ github.event.inputs.revision }}"
+          else
+            REVISION=$(gcloud run revisions list \
+              --service ${{ env.FRONTEND_SERVICE }} \
+              --region ${{ env.REGION }} \
+              --format="value(REVISION)" \
+              --sort-by="~creationTimestamp" \
+              --limit=2 | tail -1)
+          fi
+          echo "Rolling back to revision: $REVISION"
+          echo "revision=$REVISION" >> $GITHUB_OUTPUT
+
+      - name: Rollback frontend
+        run: |
+          gcloud run services update-traffic ${{ env.FRONTEND_SERVICE }} \
+            --region ${{ env.REGION }} \
+            --to-revisions=${{ steps.get-revision.outputs.revision }}=100
+
+      - name: Verify rollback
+        run: |
+          echo "Frontend rolled back to: ${{ steps.get-revision.outputs.revision }}"
+          gcloud run services describe ${{ env.FRONTEND_SERVICE }} \
+            --region ${{ env.REGION }} \
+            --format="value(status.traffic)"
+
+  summary:
+    needs: [rollback-backend, rollback-frontend]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Rollback Summary
+        run: |
+          echo "## ⏪ PROD Rollback Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Service:** ${{ github.event.inputs.service }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Triggered by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Backend rollback:** ${{ needs.rollback-backend.result || 'skipped' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Frontend rollback:** ${{ needs.rollback-frontend.result || 'skipped' }}" >> $GITHUB_STEP_SUMMARY

@@ -1,40 +1,54 @@
-name: Deploy to TEST
+name: Deploy to PROD
 
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type DEPLOY-PROD to confirm production deployment'
+        required: true
+        type: string
+      run_migrations:
+        description: 'Run database migrations'
+        required: false
+        type: boolean
+        default: true
+      deploy_backend:
+        description: 'Deploy backend'
+        required: false
+        type: boolean
+        default: true
+      deploy_frontend:
+        description: 'Deploy frontend'
+        required: false
+        type: boolean
+        default: true
 
 env:
   PROJECT_ID: trainsmart-481620
   REGION: us-central1
   BACKEND_IMAGE: us-central1-docker.pkg.dev/trainsmart-481620/trainsmart/backend
   FRONTEND_IMAGE: us-central1-docker.pkg.dev/trainsmart-481620/trainsmart/frontend
-  BACKEND_SERVICE: trainsmart-backend
-  FRONTEND_SERVICE: trainsmart-frontend
-  MIGRATIONS_JOB: trainsmart-migrations
+  BACKEND_SERVICE: trainsmart-backend-prod
+  FRONTEND_SERVICE: trainsmart-frontend-prod
+  MIGRATIONS_JOB: trainsmart-migrations-prod
   WORKLOAD_IDENTITY_PROVIDER: projects/922138784988/locations/global/workloadIdentityPools/github-pool/providers/github-provider
   SERVICE_ACCOUNT: github-actions@trainsmart-481620.iam.gserviceaccount.com
 
 jobs:
-  detect-changes:
+  validate:
     runs-on: ubuntu-latest
-    outputs:
-      backend: ${{ steps.changes.outputs.backend }}
-      frontend: ${{ steps.changes.outputs.frontend }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v3
-        id: changes
-        with:
-          filters: |
-            backend:
-              - 'backend/**'
-            frontend:
-              - 'frontend/**'
+      - name: Validate confirmation
+        if: ${{ github.event.inputs.confirm != 'DEPLOY-PROD' }}
+        run: |
+          echo "❌ Deployment cancelled. You must type 'DEPLOY-PROD' to confirm."
+          exit 1
+      - name: Confirmation accepted
+        run: echo "✅ Production deployment confirmed"
 
   deploy-backend:
-    needs: detect-changes
-    if: needs.detect-changes.outputs.backend == 'true'
+    needs: validate
+    if: ${{ github.event.inputs.deploy_backend == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -56,25 +70,29 @@ jobs:
 
       - name: Build and Push
         run: |
-          # Submit build asynchronously to avoid log streaming permission issues
+          # Tag with commit SHA for traceability
+          COMMIT_SHA=${{ github.sha }}
+
           BUILD_ID=$(gcloud builds submit ./backend \
-            --tag ${{ env.BACKEND_IMAGE }}:latest \
+            --tag ${{ env.BACKEND_IMAGE }}:${COMMIT_SHA} \
             --async \
             --format='value(id)')
 
           echo "Build ID: $BUILD_ID"
 
-          # Wait for build to complete
           while true; do
             STATUS=$(gcloud builds describe $BUILD_ID --format='value(status)')
             echo "Build status: $STATUS"
 
             if [ "$STATUS" = "SUCCESS" ]; then
               echo "Build completed successfully"
+              # Also tag as latest
+              gcloud artifacts docker tags add \
+                ${{ env.BACKEND_IMAGE }}:${COMMIT_SHA} \
+                ${{ env.BACKEND_IMAGE }}:latest
               break
             elif [ "$STATUS" = "FAILURE" ] || [ "$STATUS" = "CANCELLED" ] || [ "$STATUS" = "TIMEOUT" ]; then
               echo "Build failed with status: $STATUS"
-              # Try to get build logs
               gcloud builds log $BUILD_ID --limit=100 || true
               exit 1
             fi
@@ -85,18 +103,19 @@ jobs:
       - name: Deploy to Cloud Run
         run: |
           gcloud run deploy ${{ env.BACKEND_SERVICE }} \
-            --image ${{ env.BACKEND_IMAGE }}:latest \
+            --image ${{ env.BACKEND_IMAGE }}:${{ github.sha }} \
             --region ${{ env.REGION }}
 
       - name: Run Migrations
+        if: ${{ github.event.inputs.run_migrations == 'true' }}
         run: |
-          gcloud run jobs execute trainsmart-migrations \
+          gcloud run jobs execute ${{ env.MIGRATIONS_JOB }} \
             --region ${{ env.REGION }} \
             --wait
 
   deploy-frontend:
-    needs: detect-changes
-    if: needs.detect-changes.outputs.frontend == 'true'
+    needs: validate
+    if: ${{ github.event.inputs.deploy_frontend == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -119,14 +138,30 @@ jobs:
       - name: Build and Push
         working-directory: frontend
         run: |
-          # Submit build asynchronously to avoid log streaming permission issues
-          BUILD_ID=$(gcloud builds submit --config=cloudbuild.yaml . \
+          COMMIT_SHA=${{ github.sha }}
+
+          # Create a prod-specific cloudbuild that sets the PROD API URL
+          cat > cloudbuild-prod.yaml << 'EOF'
+          steps:
+            - name: 'gcr.io/cloud-builders/docker'
+              args:
+                - 'build'
+                - '-t'
+                - 'us-central1-docker.pkg.dev/trainsmart-481620/trainsmart/frontend:$COMMIT_SHA'
+                - '--build-arg'
+                - 'NEXT_PUBLIC_API_URL=https://trainsmart-backend-prod-922138784988.us-central1.run.app'
+                - '.'
+          images:
+            - 'us-central1-docker.pkg.dev/trainsmart-481620/trainsmart/frontend:$COMMIT_SHA'
+          EOF
+
+          BUILD_ID=$(gcloud builds submit --config=cloudbuild-prod.yaml . \
+            --substitutions=COMMIT_SHA=${COMMIT_SHA} \
             --async \
             --format='value(id)')
 
           echo "Build ID: $BUILD_ID"
 
-          # Wait for build to complete
           while true; do
             STATUS=$(gcloud builds describe $BUILD_ID --format='value(status)')
             echo "Build status: $STATUS"
@@ -136,7 +171,6 @@ jobs:
               break
             elif [ "$STATUS" = "FAILURE" ] || [ "$STATUS" = "CANCELLED" ] || [ "$STATUS" = "TIMEOUT" ]; then
               echo "Build failed with status: $STATUS"
-              # Try to get build logs
               gcloud builds log $BUILD_ID --limit=100 || true
               exit 1
             fi
@@ -147,5 +181,23 @@ jobs:
       - name: Deploy to Cloud Run
         run: |
           gcloud run deploy ${{ env.FRONTEND_SERVICE }} \
-            --image ${{ env.FRONTEND_IMAGE }}:latest \
+            --image ${{ env.FRONTEND_IMAGE }}:${{ github.sha }} \
             --region ${{ env.REGION }}
+
+  notify:
+    needs: [deploy-backend, deploy-frontend]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deployment Summary
+        run: |
+          echo "## 🚀 PROD Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Triggered by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Backend:** ${{ needs.deploy-backend.result || 'skipped' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Frontend:** ${{ needs.deploy-frontend.result || 'skipped' }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### PROD URLs" >> $GITHUB_STEP_SUMMARY
+          echo "- Frontend: https://ctlstlabs.com" >> $GITHUB_STEP_SUMMARY
+          echo "- API: https://api.ctlstlabs.com" >> $GITHUB_STEP_SUMMARY

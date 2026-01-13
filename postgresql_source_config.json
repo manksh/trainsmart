@@ -1,0 +1,11 @@
+{
+  "publication": "trainsmart_publication",
+  "replicationSlot": "trainsmart_replication_slot",
+  "includeObjects": {
+    "postgresqlSchemas": [
+      {
+        "schema": "public"
+      }
+    ]
+  }
+}
