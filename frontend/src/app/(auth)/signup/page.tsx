@@ -470,6 +470,24 @@ function SignupFormComponent() {
                 Sign in
               </Link>
             </p>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-sage-200" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-[#fafdf7] text-sage-500">or</span>
+              </div>
+            </div>
+
+            <a
+              href="https://docs.google.com/forms/d/e/1FAIpQLSfNjBEJ1GLOUNp8TJ30mClOU948HKyohfX_0kDhBmvZ1xPNvg/viewform"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block w-full text-center py-2.5 px-4 border border-sage-300 rounded-lg text-sage-700 font-medium hover:bg-sage-50 hover:border-sage-400 transition-colors focus:outline-none focus:ring-2 focus:ring-sage-400 focus:ring-offset-2"
+            >
+              Join Our Waitlist
+            </a>
           </form>
         </div>
       </div>
