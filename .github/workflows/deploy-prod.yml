@@ -149,7 +149,7 @@ jobs:
                 - '-t'
                 - 'us-central1-docker.pkg.dev/trainsmart-481620/trainsmart/frontend:$COMMIT_SHA'
                 - '--build-arg'
-                - 'NEXT_PUBLIC_API_URL=https://trainsmart-backend-prod-922138784988.us-central1.run.app'
+                - 'NEXT_PUBLIC_API_URL=https://api.ctlstlabs.com'
                 - '.'
           images:
             - 'us-central1-docker.pkg.dev/trainsmart-481620/trainsmart/frontend:$COMMIT_SHA'
