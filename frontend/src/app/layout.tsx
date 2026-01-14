@@ -8,6 +8,19 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'CTLST Labs - Mental Performance Training',
   description: 'Mental performance training application for athletes',
+  manifest: '/manifest.json',
+  themeColor: '#4a7c59',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'CTLST Labs',
+  },
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+  },
 }
 
 export default function RootLayout({

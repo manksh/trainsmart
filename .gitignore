@@ -34,3 +34,9 @@ venv/
 *.pyo
 github-actions-key.json
 frontend/tsconfig.tsbuildinfo
+
+# PWA generated files
+frontend/public/sw.js
+frontend/public/workbox-*.js
+frontend/public/sw.js.map
+frontend/public/workbox-*.js.map
