@@ -104,7 +104,8 @@ jobs:
         run: |
           gcloud run deploy ${{ env.BACKEND_SERVICE }} \
             --image ${{ env.BACKEND_IMAGE }}:${{ github.sha }} \
-            --region ${{ env.REGION }}
+            --region ${{ env.REGION }} \
+            --update-secrets=RESEND_API_KEY=RESEND_API_KEY:latest
 
       - name: Run Migrations
         if: ${{ github.event.inputs.run_migrations == 'true' }}
