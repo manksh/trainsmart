@@ -213,6 +213,16 @@ Deployment happens automatically via GitHub Actions on push to main:
 - Backend: Cloud Run service `trainsmart-backend`
 - Database: Cloud SQL PostgreSQL
 
+### Deployment Safety Rules
+
+**IMPORTANT:** When pushing code to GitHub:
+1. **DO NOT automatically deploy to PROD** - Only push to GitHub and let TEST deploy run
+2. **Wait for TEST to pass** - Verify the changes work in TEST environment first
+3. **User triggers PROD deployment** - Only deploy to PROD when the user explicitly requests it
+4. PROD deployment requires manual confirmation (`DEPLOY-PROD`)
+
+This prevents accidental production deployments and allows for proper testing.
+
 ### Manual Deployment
 
 ```bash
