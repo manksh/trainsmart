@@ -4,6 +4,13 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import { apiGet, apiPost } from '@/lib/api'
+import { NotificationPermissionPrompt } from '@/components/notifications'
+import { useNotifications } from '@/hooks/useNotifications'
+import {
+  isPushSupported,
+  shouldShowPrompt,
+  recordPromptDismissal,
+} from '@/lib/notifications'
 
 interface ConfidenceSource {
   key: string
@@ -64,6 +71,10 @@ export default function ConfidenceCheckInPage() {
   const [error, setError] = useState<string | null>(null)
   const [history, setHistory] = useState<CheckInHistoryData | null>(null)
   const [showHistory, setShowHistory] = useState(false)
+
+  // Notification prompt state
+  const [showNotificationPrompt, setShowNotificationPrompt] = useState(false)
+  const notifications = useNotifications()
 
   // Fetch config and user data on mount
   useEffect(() => {
@@ -158,6 +169,10 @@ export default function ConfidenceCheckInPage() {
 
   const handleSubmit = async () => {
     if (!fullUser?.memberships?.[0]) return
+
+    // Track if this was user's first confidence check-in
+    const isFirstCheckIn = !history || history.total === 0
+
     setIsSubmitting(true)
     setError(null)
 
@@ -175,12 +190,39 @@ export default function ConfidenceCheckInPage() {
 
       await apiPost('/checkins/confidence', payload)
       setStep('complete')
+
+      // Show notification prompt after first check-in with delay
+      if (isFirstCheckIn) {
+        const shouldPrompt =
+          isPushSupported() &&
+          notifications.permission === 'default' &&
+          shouldShowPrompt()
+
+        if (shouldPrompt) {
+          setTimeout(() => {
+            setShowNotificationPrompt(true)
+          }, 1500)
+        }
+      }
     } catch (err) {
       setError('Failed to save your check-in. Please try again.')
       console.error(err)
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  // Notification prompt handlers
+  const handleEnableNotifications = async () => {
+    const success = await notifications.subscribe()
+    if (success) {
+      setShowNotificationPrompt(false)
+    }
+  }
+
+  const handleDismissNotifications = () => {
+    recordPromptDismissal()
+    setShowNotificationPrompt(false)
   }
 
   if (authLoading || isLoading) {
@@ -816,6 +858,15 @@ export default function ConfidenceCheckInPage() {
             </div>
           </div>
         </div>
+
+        {/* Notification Permission Prompt */}
+        <NotificationPermissionPrompt
+          isOpen={showNotificationPrompt}
+          onClose={() => setShowNotificationPrompt(false)}
+          onEnable={handleEnableNotifications}
+          onDismiss={handleDismissNotifications}
+          isLoading={notifications.isLoading}
+        />
       </div>
     )
   }
