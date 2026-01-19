@@ -2,8 +2,21 @@
 Pytest configuration and fixtures for TrainSmart tests.
 """
 
-import asyncio
 import os
+
+# Set mock VAPID keys for push notification testing BEFORE app imports
+# These are test keys and should never be used in production
+# Generated for testing purposes only
+os.environ.setdefault(
+    "VAPID_PRIVATE_KEY",
+    "MHcCAQEEIF7R3yJxKx5OvEH8J9J9pNJj8vEgGT1xBqPbJq7xOJbLoAoGCCqGSM49AwEHoUQDQgAEKxh6Y3VJH4YbmJZ8kEHJ0FpFZkXH2c7fXi3r2Ks3w7tQbP9vZ8K4cQ3r2mN6tQ9sZ8yXbZ8cQ3r2mN6tQ9sZ8Q=="
+)
+os.environ.setdefault(
+    "VAPID_PUBLIC_KEY",
+    "BKxh6Y3VJH4YbmJZ8kEHJ0FpFZkXH2c7fXi3r2Ks3w7tQbP9vZ8K4cQ3r2mN6tQ9sZ8yXbZ8cQ3r2mN6tQ9sZ8E="
+)
+
+import asyncio
 import uuid
 from datetime import datetime
 from typing import AsyncGenerator, Dict, Any
