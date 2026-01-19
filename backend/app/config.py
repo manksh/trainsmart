@@ -69,6 +69,11 @@ class Settings(BaseSettings):
     resend_api_key: Optional[str] = None
     from_email: str = "noreply@ctlstlabs.com"
 
+    # Push Notifications (VAPID keys for web push)
+    vapid_private_key: Optional[str] = None
+    vapid_public_key: Optional[str] = None
+    vapid_subject: str = "mailto:support@ctlstlabs.com"
+
     # App
     app_name: str = "CTLST Labs"
     api_v1_prefix: str = "/api/v1"

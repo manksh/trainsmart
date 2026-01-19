@@ -31,6 +31,9 @@ services:
       ENVIRONMENT: ${ENVIRONMENT:-development}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
       RESEND_API_KEY: ${RESEND_API_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-02XpHT5DuGfzlpg9kYuAglbG0jNc9Rc98HwyCoTHmJ0}
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-BP2BAforhBUefQwMNJ7PTIZyYvUU1J6inVYziURIS0iLDdLSgf2fqe4u8VBnxN_PFxqVA8-MmYqI0cvWDqs_45M}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:support@ctlstlabs.com}
     volumes:
       - ./backend:/app
     ports:
