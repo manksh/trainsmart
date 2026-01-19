@@ -104,10 +104,10 @@ export async function requestPermission(): Promise<NotificationPermission> {
  * This key is required for creating push subscriptions.
  */
 export async function getVapidPublicKey(): Promise<string> {
-  const response = await apiGet<{ vapid_public_key: string }>(
+  const response = await apiGet<{ public_key: string }>(
     '/notifications/vapid-public-key'
   );
-  return response.vapid_public_key;
+  return response.public_key;
 }
 
 /**
