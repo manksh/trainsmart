@@ -136,6 +136,104 @@ CTLST Labs
             text_content=text_content,
         )
 
+    async def send_invite_email(
+        self,
+        to_email: str,
+        signup_url: str,
+        organization_name: str,
+        role: str,
+        inviter_name: Optional[str] = None,
+    ) -> bool:
+        """
+        Send an invite email to a new user.
+
+        Args:
+            to_email: Recipient email address
+            signup_url: URL for the signup page (includes invite code)
+            organization_name: Name of the organization they're being invited to
+            role: Role they're being invited as (e.g., "athlete", "admin")
+            inviter_name: Optional name of the person who sent the invite
+
+        Returns:
+            True if email was sent successfully, False otherwise
+        """
+        role_display = role.replace("_", " ").title()
+        inviter_text = f" {inviter_name} has" if inviter_name else " You've been"
+
+        subject = f"You're invited to join {organization_name} on CTLST Labs"
+
+        html_content = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="background: linear-gradient(135deg, #4a6741 0%, #7a9f70 100%); padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
+        <h1 style="color: white; margin: 0; font-size: 24px;">CTLST Labs</h1>
+        <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 14px;">Mental Performance Training</p>
+    </div>
+
+    <div style="background: #ffffff; padding: 30px; border: 1px solid #e5e5e5; border-top: none; border-radius: 0 0 12px 12px;">
+        <p style="font-size: 16px; margin-bottom: 20px;">Hi,</p>
+
+        <p style="font-size: 16px; margin-bottom: 20px;">
+            {inviter_text} invited you to join <strong>{organization_name}</strong> as a <strong>{role_display}</strong> on CTLST Labs.
+        </p>
+
+        <p style="font-size: 16px; margin-bottom: 20px;">
+            CTLST Labs is a mental performance training platform designed to help athletes build the mental skills needed for peak performance.
+        </p>
+
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="{signup_url}"
+               style="display: inline-block; background-color: #4a6741; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
+                Accept Invitation
+            </a>
+        </div>
+
+        <p style="font-size: 14px; color: #666; margin-bottom: 10px;">
+            This invitation will expire in 7 days.
+        </p>
+
+        <hr style="border: none; border-top: 1px solid #e5e5e5; margin: 25px 0;">
+
+        <p style="font-size: 12px; color: #999; text-align: center;">
+            If the button doesn't work, copy and paste this link into your browser:<br>
+            <a href="{signup_url}" style="color: #4a6741; word-break: break-all;">{signup_url}</a>
+        </p>
+    </div>
+
+    <div style="text-align: center; padding: 20px; color: #999; font-size: 12px;">
+        <p>&copy; 2025 CTLST Labs. All rights reserved.</p>
+    </div>
+</body>
+</html>
+"""
+
+        text_content = f"""Hi,
+
+{inviter_text} invited you to join {organization_name} as a {role_display} on CTLST Labs.
+
+CTLST Labs is a mental performance training platform designed to help athletes build the mental skills needed for peak performance.
+
+Accept your invitation by visiting:
+{signup_url}
+
+This invitation will expire in 7 days.
+
+---
+CTLST Labs
+"""
+
+        return await self._send_email(
+            to_email=to_email,
+            subject=subject,
+            html_content=html_content,
+            text_content=text_content,
+        )
+
     async def _send_email(
         self,
         to_email: str,

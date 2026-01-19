@@ -1,5 +1,6 @@
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status
+from typing import Optional
+from fastapi import APIRouter, Depends, HTTPException, status, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
@@ -9,8 +10,25 @@ from app.api.deps import CurrentUser, SuperAdmin
 from app.schemas import InviteCreate, InviteResponse, InviteWithOrg, InviteValidation
 from app.models import Invite, Organization, Membership, User
 from app.models.membership import MembershipRole
+from app.services.email import email_service
 
 router = APIRouter()
+
+
+def _get_frontend_url(origin: Optional[str] = None, referer: Optional[str] = None) -> str:
+    """
+    Determine the frontend URL from request headers.
+    """
+    if origin:
+        return origin.rstrip("/")
+
+    if referer:
+        from urllib.parse import urlparse
+        parsed = urlparse(referer)
+        if parsed.scheme and parsed.netloc:
+            return f"{parsed.scheme}://{parsed.netloc}"
+
+    return "http://localhost:3000"
 
 
 @router.post("", response_model=InviteResponse, status_code=status.HTTP_201_CREATED)
@@ -18,6 +36,8 @@ async def create_invite(
     invite_data: InviteCreate,
     current_user: CurrentUser,
     db: AsyncSession = Depends(get_db),
+    origin: Optional[str] = Header(None),
+    referer: Optional[str] = Header(None),
 ):
     """
     Create an invite.
@@ -99,6 +119,25 @@ async def create_invite(
     db.add(invite)
     await db.commit()
     await db.refresh(invite)
+
+    # Send invite email
+    frontend_url = _get_frontend_url(origin, referer)
+    signup_url = f"{frontend_url}/signup?code={invite.code}"
+
+    # Get inviter's name for personalization
+    inviter_name = None
+    if current_user.first_name:
+        inviter_name = current_user.first_name
+        if current_user.last_name:
+            inviter_name += f" {current_user.last_name}"
+
+    await email_service.send_invite_email(
+        to_email=invite.email,
+        signup_url=signup_url,
+        organization_name=org.name,
+        role=invite.role.value,
+        inviter_name=inviter_name,
+    )
 
     return InviteResponse.model_validate(invite)
 
