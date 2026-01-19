@@ -22,6 +22,7 @@ from app.models.training_module import (
     ModuleStatus,
     BEING_HUMAN_CONTENT,
 )
+from app.models.password_reset import PasswordResetToken
 
 __all__ = [
     "User",
@@ -51,4 +52,5 @@ __all__ = [
     "ModuleProgress",
     "ModuleStatus",
     "BEING_HUMAN_CONTENT",
+    "PasswordResetToken",
 ]

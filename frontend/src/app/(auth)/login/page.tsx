@@ -273,8 +273,13 @@ export default function LoginPage() {
                   <div>
                     <p className="font-medium">Having trouble signing in?</p>
                     <p className="mt-1">
-                      If you have forgotten your password, please contact your administrator
-                      to reset it.
+                      <Link
+                        href="/forgot-password"
+                        className="underline underline-offset-2 hover:text-blue-800"
+                      >
+                        Reset your password
+                      </Link>
+                      {' '}if you&apos;ve forgotten it.
                     </p>
                   </div>
                 </div>
@@ -306,12 +311,20 @@ export default function LoginPage() {
               </div>
 
               <div>
-                <label
-                  htmlFor="password"
-                  className="block text-sm font-medium text-sage-700 mb-1.5"
-                >
-                  Password
-                </label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label
+                    htmlFor="password"
+                    className="block text-sm font-medium text-sage-700"
+                  >
+                    Password
+                  </label>
+                  <Link
+                    href="/forgot-password"
+                    className="text-sm text-sage-600 hover:text-sage-700 underline underline-offset-2 focus:outline-none focus:ring-2 focus:ring-sage-400 focus:ring-offset-2 rounded"
+                  >
+                    Forgot password?
+                  </Link>
+                </div>
                 <Input
                   id="password"
                   type="password"

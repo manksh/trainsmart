@@ -43,6 +43,12 @@ from app.schemas.coaching import (
     PillarTipsOut,
     CoachingTipsResponse,
 )
+from app.schemas.password_reset import (
+    ForgotPasswordRequest,
+    ForgotPasswordResponse,
+    ResetPasswordRequest,
+    ResetPasswordResponse,
+)
 
 __all__ = [
     # User
@@ -84,4 +90,9 @@ __all__ = [
     "CoachingTipOut",
     "PillarTipsOut",
     "CoachingTipsResponse",
+    # Password Reset
+    "ForgotPasswordRequest",
+    "ForgotPasswordResponse",
+    "ResetPasswordRequest",
+    "ResetPasswordResponse",
 ]
