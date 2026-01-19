@@ -4,6 +4,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import { apiGet } from '@/lib/api'
 import { useEffect, useState } from 'react'
+import { NotificationToggle } from '@/components/notifications'
 
 interface UserMembership {
   organization_id: string
@@ -119,8 +120,8 @@ export function TopNav() {
           </nav>
 
           {/* User menu */}
-          <div className="flex items-center gap-3">
-            <div className="hidden sm:block text-right">
+          <div className="flex items-center gap-2">
+            <div className="hidden sm:block text-right mr-1">
               <p className="text-sm font-medium text-gray-900">
                 {fullUser?.first_name}
               </p>
@@ -128,6 +129,7 @@ export function TopNav() {
                 {fullUser?.memberships?.[0]?.organization_name}
               </p>
             </div>
+            <NotificationToggle />
             <button
               onClick={logout}
               className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"

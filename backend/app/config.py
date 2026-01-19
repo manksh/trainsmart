@@ -74,6 +74,11 @@ class Settings(BaseSettings):
     vapid_public_key: Optional[str] = None
     vapid_subject: str = "mailto:support@ctlstlabs.com"
 
+    # Scheduler (for internal scheduled endpoints)
+    # Optional API key for scheduler endpoints. If set, requests must include
+    # X-Scheduler-API-Key header. Will be replaced with OIDC in production.
+    scheduler_api_key: Optional[str] = None
+
     # App
     app_name: str = "CTLST Labs"
     api_v1_prefix: str = "/api/v1"

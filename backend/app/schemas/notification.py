@@ -133,6 +133,28 @@ class TestNotificationResponse(BaseModel):
     devices_notified: int
 
 
+# === Check-in Reminder Schemas ===
+
+class CheckinReminderResponse(BaseModel):
+    """Response schema for check-in reminder batch send."""
+    sent: int = Field(
+        ...,
+        description="Number of users who received reminders successfully"
+    )
+    skipped: int = Field(
+        ...,
+        description="Number of users skipped (e.g., device deactivated mid-process)"
+    )
+    failed: int = Field(
+        ...,
+        description="Number of users where notification delivery failed"
+    )
+    errors: Optional[List[Dict[str, Any]]] = Field(
+        None,
+        description="Details of failures (only present if failed > 0)"
+    )
+
+
 # === Notification Log Schemas ===
 
 class NotificationLogOut(BaseModel):

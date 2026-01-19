@@ -6,16 +6,20 @@ Provides endpoints for:
 - Device registration/unregistration
 - Notification preferences management
 - Sending test notifications
+- Batch check-in reminder sending (for Cloud Scheduler)
 """
 
+import logging
+from typing import Optional
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db, get_current_active_user
 from app.models.user import User
 from app.models.notification import Platform
 from app.services.push_notification import push_notification_service
+from app.services.checkin_reminder import checkin_reminder_service
 from app.schemas.notification import (
     DeviceTokenCreate,
     DeviceTokenOut,
@@ -25,8 +29,11 @@ from app.schemas.notification import (
     VapidPublicKeyOut,
     TestNotificationRequest,
     TestNotificationResponse,
+    CheckinReminderResponse,
 )
 from app.config import settings
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -242,4 +249,62 @@ async def send_test_notification(
         success=result["success"],
         message=result["message"],
         devices_notified=result["devices_notified"],
+    )
+
+
+# === Scheduled Notification Endpoints (Internal) ===
+
+@router.post("/send-checkin-reminders", response_model=CheckinReminderResponse)
+async def send_checkin_reminders(
+    db: AsyncSession = Depends(get_db),
+    x_scheduler_api_key: Optional[str] = Header(None, alias="X-Scheduler-API-Key"),
+):
+    """
+    Send check-in reminders to all eligible users.
+
+    This endpoint is designed to be called by Cloud Scheduler at 9 AM and 2 PM EST.
+    It will be secured with OIDC authentication in production.
+
+    **Eligibility criteria:**
+    - User has daily_checkin_reminder = true in notification_preferences
+    - User has at least one active device in device_tokens
+    - User has NOT checked in today (based on EST timezone)
+    - User has NOT already received a daily_checkin notification today
+
+    **Authentication:**
+    For now, this endpoint accepts an optional X-Scheduler-API-Key header.
+    In production, this will be replaced with Cloud Scheduler OIDC token validation.
+    If SCHEDULER_API_KEY is configured and the header doesn't match, returns 401.
+
+    **Response:**
+    - sent: Number of users who received reminders successfully
+    - skipped: Number of users skipped (e.g., device deactivated mid-process)
+    - failed: Number of users where notification delivery failed
+    - errors: Details of failures (only present if failed > 0)
+    """
+    # Simple API key auth (will be replaced with OIDC in production)
+    # If SCHEDULER_API_KEY is set in config, require it
+    expected_key = getattr(settings, "scheduler_api_key", None)
+    if expected_key and x_scheduler_api_key != expected_key:
+        logger.warning("Unauthorized attempt to call send-checkin-reminders")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or missing scheduler API key",
+        )
+
+    if not settings.vapid_private_key:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Push notifications are not configured",
+        )
+
+    logger.info("Check-in reminder endpoint called")
+
+    result = await checkin_reminder_service.send_checkin_reminders(db)
+
+    return CheckinReminderResponse(
+        sent=result.sent,
+        skipped=result.skipped,
+        failed=result.failed,
+        errors=result.errors if result.errors else None,
     )
