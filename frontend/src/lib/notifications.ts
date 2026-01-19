@@ -253,10 +253,8 @@ export async function unsubscribeFromNotifications(): Promise<void> {
       if (subscriptionJson.endpoint) {
         try {
           // Use base64 encoding for the endpoint as a device identifier
-          const adapter = getBrowserAdapter();
-          const deviceId = adapter.atob
-            ? btoa(subscriptionJson.endpoint)
-            : Buffer.from(subscriptionJson.endpoint).toString('base64');
+          // btoa is available in browser context where this code runs
+          const deviceId = btoa(subscriptionJson.endpoint);
           await apiDelete(`/notifications/devices/${deviceId}`);
         } catch (error) {
           // Backend might not have this subscription, that's okay
