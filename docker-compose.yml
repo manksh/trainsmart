@@ -30,6 +30,7 @@ services:
       SECRET_KEY: ${SECRET_KEY:-dev-secret-key-change-in-production}
       ENVIRONMENT: ${ENVIRONMENT:-development}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
     volumes:
       - ./backend:/app
     ports:
