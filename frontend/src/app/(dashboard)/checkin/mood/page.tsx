@@ -5,13 +5,6 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import { apiGet, apiPost } from '@/lib/api'
 import { Button } from '@/components/ui/button'
-import { NotificationPermissionPrompt } from '@/components/notifications'
-import { useNotifications } from '@/hooks/useNotifications'
-import {
-  isPushSupported,
-  shouldShowPrompt,
-  recordPromptDismissal,
-} from '@/lib/notifications'
 
 interface EmotionConfig {
   key: string
@@ -109,11 +102,6 @@ export default function MoodCheckInPage() {
   const [history, setHistory] = useState<CheckInHistoryData | null>(null)
   const [showHistory, setShowHistory] = useState(false)
 
-  // Notification prompt state
-  const [showNotificationPrompt, setShowNotificationPrompt] = useState(false)
-  const [wasFirstCheckIn, setWasFirstCheckIn] = useState(false)
-  const notifications = useNotifications()
-
   // Form state
   const [selectedEmotion, setSelectedEmotion] = useState<string | null>(null)
   const [selectedSignals, setSelectedSignals] = useState<string[]>([])
@@ -197,9 +185,6 @@ export default function MoodCheckInPage() {
   const handleSubmit = async () => {
     if (!selectedEmotion || !fullUser?.memberships?.[0]) return
 
-    // Track if this was user's first check-in (before history includes this one)
-    const isFirstCheckIn = !history || history.total === 0
-
     setIsSubmitting(true)
     try {
       await apiPost('/checkins', {
@@ -211,26 +196,7 @@ export default function MoodCheckInPage() {
         signals_resonated: selectedSignals,
         selected_action: selectedAction,
       })
-
-      // Remember if this was the first check-in for notification prompt
-      setWasFirstCheckIn(isFirstCheckIn)
       setStep('complete')
-
-      // Show notification prompt after first check-in with delay
-      if (isFirstCheckIn) {
-        // Check conditions for showing notification prompt
-        const shouldPrompt =
-          isPushSupported() &&
-          notifications.permission === 'default' &&
-          shouldShowPrompt()
-
-        if (shouldPrompt) {
-          // Show prompt after 1.5 second delay
-          setTimeout(() => {
-            setShowNotificationPrompt(true)
-          }, 1500)
-        }
-      }
     } catch (err) {
       console.error('Failed to submit check-in:', err)
     } finally {
@@ -239,20 +205,6 @@ export default function MoodCheckInPage() {
   }
 
   const selectedEmotionConfig = emotionsConfig?.emotions.find(e => e.key === selectedEmotion)
-
-  // Notification prompt handlers
-  const handleEnableNotifications = async () => {
-    const success = await notifications.subscribe()
-    if (success) {
-      setShowNotificationPrompt(false)
-      // Could show a success toast here if desired
-    }
-  }
-
-  const handleDismissNotifications = () => {
-    recordPromptDismissal()
-    setShowNotificationPrompt(false)
-  }
 
   if (authLoading || isLoading) {
     return (
@@ -882,15 +834,6 @@ export default function MoodCheckInPage() {
           </div>
         )}
       </div>
-
-      {/* Notification Permission Prompt */}
-      <NotificationPermissionPrompt
-        isOpen={showNotificationPrompt}
-        onClose={() => setShowNotificationPrompt(false)}
-        onEnable={handleEnableNotifications}
-        onDismiss={handleDismissNotifications}
-        isLoading={notifications.isLoading}
-      />
 
       <style jsx>{`
         @keyframes fadeIn {

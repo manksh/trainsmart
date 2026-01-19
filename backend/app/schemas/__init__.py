@@ -43,24 +43,6 @@ from app.schemas.coaching import (
     PillarTipsOut,
     CoachingTipsResponse,
 )
-from app.schemas.notification import (
-    DeviceTokenCreate,
-    DeviceTokenOut,
-    DeviceTokenList,
-    NotificationPreferenceOut,
-    NotificationPreferenceUpdate,
-    VapidPublicKeyOut,
-    TestNotificationRequest,
-    TestNotificationResponse,
-    NotificationLogOut,
-    NotificationPayload,
-)
-from app.schemas.password_reset import (
-    ForgotPasswordRequest,
-    ForgotPasswordResponse,
-    ResetPasswordRequest,
-    ResetPasswordResponse,
-)
 
 __all__ = [
     # User
@@ -102,20 +84,4 @@ __all__ = [
     "CoachingTipOut",
     "PillarTipsOut",
     "CoachingTipsResponse",
-    # Notifications
-    "DeviceTokenCreate",
-    "DeviceTokenOut",
-    "DeviceTokenList",
-    "NotificationPreferenceOut",
-    "NotificationPreferenceUpdate",
-    "VapidPublicKeyOut",
-    "TestNotificationRequest",
-    "TestNotificationResponse",
-    "NotificationLogOut",
-    "NotificationPayload",
-    # Password Reset
-    "ForgotPasswordRequest",
-    "ForgotPasswordResponse",
-    "ResetPasswordRequest",
-    "ResetPasswordResponse",
 ]
