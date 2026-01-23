@@ -8,6 +8,7 @@ import { apiGet, apiDelete } from '@/lib/api'
 import { MPA_DEFINITIONS, MPADimension } from '@/lib/mpaDefinitions'
 import { DimensionInfoModal } from '@/components/ui/DimensionInfoModal'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
+import { SupportingDimensionsCard } from '@/components/ui/SupportingDimensionsCard'
 
 interface UserMembership {
   organization_id: string
@@ -306,6 +307,14 @@ function AssessmentResults({ results, onRedo }: { results: AssessmentResult; onR
           </ul>
         </div>
       </div>
+
+      {/* Supporting Dimensions */}
+      {results.pillar_scores && (
+        <SupportingDimensionsCard
+          scores={results.pillar_scores}
+          variant="card"
+        />
+      )}
 
       {/* Radar Chart and All Scores */}
       <div className="grid gap-6 md:grid-cols-2">

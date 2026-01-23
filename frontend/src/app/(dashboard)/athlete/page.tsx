@@ -9,7 +9,6 @@ import { ExpandableSection, GroupedExpandableSection, ExpandableSectionOption } 
 import { ErrorBoundary, CardErrorFallback } from '@/components/error'
 import { useAsyncData } from '@/hooks/useAsyncData'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
-import { SupportingDimensionsCard } from '@/components/ui/SupportingDimensionsCard'
 
 interface UserMembership {
   organization_id: string
@@ -40,7 +39,6 @@ interface AssessmentResult {
     feeling: number
     action: number
   } | null
-  pillar_scores: Record<string, number> | null
 }
 
 // === Check-in Types ===
@@ -730,14 +728,6 @@ export default function HomePage() {
           <MentalPerformanceScores
             scores={assessmentResult.meta_scores}
             onViewProfile={() => router.push('/profile')}
-          />
-        )}
-
-        {/* Supporting Dimensions (if assessment completed) */}
-        {hasCompletedAssessment && assessmentResult?.pillar_scores && (
-          <SupportingDimensionsCard
-            scores={assessmentResult.pillar_scores}
-            variant="card"
           />
         )}
 
