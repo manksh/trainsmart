@@ -18,6 +18,7 @@ import {
   type PillarKey,
 } from '@/lib/mpaDefinitions'
 import { PillarTooltip } from '@/components/ui/PillarTooltip'
+import { SupportingDimensionsCard } from '@/components/ui/SupportingDimensionsCard'
 
 interface Athlete {
   id: string
@@ -453,6 +454,18 @@ export default function AdminDashboard() {
                                   )
                                 })}
                               </div>
+
+                              {/* Supporting Dimensions */}
+                              <div className="border-t border-gray-200 pt-4 mt-4">
+                                <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">
+                                  Supporting Dimensions
+                                </h4>
+                                <SupportingDimensionsCard
+                                  scores={athlete.pillar_scores}
+                                  variant="inline"
+                                />
+                              </div>
+
                               {/* View Tips button - Desktop only */}
                               {isDesktop && (
                                 <div className="pt-2 border-t border-gray-200">

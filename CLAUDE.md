@@ -1,5 +1,25 @@
 # TrainSmart Development Guide
 
+## CRITICAL: Destructive Commands - NEVER Run Without Permission
+
+**NEVER run these commands without EXPLICIT user permission:**
+
+- `docker-compose down -v` - **DESTROYS ALL DATABASE DATA**
+- `docker volume rm` - Destroys data volumes
+- `DROP DATABASE` / `DROP TABLE` - Destroys database objects
+- `alembic downgrade` - Can cause data loss
+- `rm -rf` on data directories
+
+**When debugging database connection issues:**
+1. Check logs first (`docker-compose logs db`)
+2. Wait for containers to fully start
+3. Verify credentials match docker-compose.yml
+4. **ASK the user before taking destructive action**
+
+The local database contains test users, assessment data, and progress that takes time to recreate. Wiping it causes significant disruption.
+
+---
+
 ## Project Overview
 
 TrainSmart is a B2B Mental Performance Training Platform built with:
